@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="md3_surface">#9AF5F5F5</color>
+    <color name="transparent_m">#D8F5F5F5</color>
+    <color name="ic_launcher_background">#EBDFD3</color>
+
+
+    <color name="yellow_500">#ffde03</color>
+    <color name="blue_700">#0336ff</color>
+    <color name="red_500">#ff0266</color>
+    <integer-array name="cat_custom_progress_colors">
+        <item>@color/yellow_500</item>
+        <item>@color/blue_700</item>
+        <item>@color/red_500</item>
+    </integer-array>
+</resources>

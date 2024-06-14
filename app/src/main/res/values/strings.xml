@@ -1,0 +1,93 @@
+<resources>
+    <string name="app_name">ChatEasy</string>
+    <string name="addNewUser">Add New Friends</string>
+    <string name="search_f">Search Friends</string>
+    <string name="todo">TODO</string>
+    <string name="massage">Massage</string>
+    <string name="SwipeDismissBehavior">com.google.android.material.behavior.SwipeDismissBehavior</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+
+
+    <string name="RegistrationActivity_phone_number">Phone number</string>
+    <!-- Subtitle of registration screen when asking for the users phone number -->
+    <string name="RegistrationActivity_enter_your_phone_number_to_get_started">Enter your phone number to get started.</string>
+    <string name="RegistrationActivity_take_privacy_with_you_be_yourself_in_every_message">Take privacy with you.\nBe yourself in every message.</string>
+    <string name="RegistrationActivity_continue">Continue</string>
+
+    <string name="CreateProfileActivity__profile">Profile</string>
+    <string name="CreateProfileActivity_set_up_your_profile">Set up your profile</string>
+    <string name="ProfileCreateFragment__profiles_are_visible_to_contacts_and_people_you_message">Profiles are visible to people you message, contacts, and groups.</string>
+    <string name="CreateProfileActivity_first_name_required">First name </string>
+    <string name="CreateProfileActivity_last_name_optional">Last name </string>
+    <string name="CreateProfileActivity_next">Next</string>
+    <string name="CreateProfileActivity_custom_mms_group_names_and_photos_will_only_be_visible_to_you">Custom MMS group names and photos will only be visible to you.</string>
+    <string name="CreateProfileActivity_group_descriptions_will_be_visible_to_members_of_this_group_and_people_who_have_been_invited">Group descriptions will be visible to members of this group and people who have been invited.</string>
+
+    <!-- RecaptchaProofActivity -->
+    <string name="RecaptchaProofActivity_failed_to_submit">Failed to submit</string>
+    <string name="RecaptchaProofActivity_complete_verification">Complete verification</string>
+
+    <!-- RegistrationActivity -->
+    <string name="RegistrationActivity_select_your_country">Select your country</string>
+    <string name="RegistrationActivity_you_must_specify_your_country_code">You must specify your
+        country code
+    </string>
+    <string name="RegistrationActivity_please_enter_a_valid_phone_number_to_register">Please enter a valid phone number to register.</string>
+    <string name="RegistrationActivity_invalid_number">Invalid number</string>
+    <string name="RegistrationActivity_the_number_you_specified_s_is_invalid">The number you
+        specified (%s) is invalid.
+    </string>
+
+    <!-- Dialog title shown when registering and we want to verify they entered the correct number before proceeding. -->
+    <string name="RegistrationActivity_phone_number_verification_dialog_title">Is the phone number below correct?</string>
+    <!-- Dialog message shown when we need to verify sms and carrier rates may apply. -->
+    <string name="RegistrationActivity_a_verification_code_will_be_sent_to_this_number">A verification code will be sent to this number. Carrier rates may apply.</string>
+    <string name="RegistrationActivity_edit_number">Edit number</string>
+
+    <string name="CreateProfileActivity_signal_profiles_are_end_to_end_encrypted">Your profile and changes to it will be visible to people you message, contacts, and groups.</string>
+
+
+    <string name="code">Code</string>
+    <string name="otp">OTP</string>
+    <string name="send_otp">Send OTP</string>
+    <string name="phone_number">Phone number</string>
+    <string name="verify_and_continue">Verify and Continue</string>
+    <string name="change_number">Wrong number?</string>
+    <string name="email_id">Email ID</string>
+    <string name="about_user">About</string>
+    <string name="user_status">Online</string>
+    <string name="temp_user_name">User Name</string>
+    <string name="search_user">Search User.....</string>
+    <string name="Registration_phoneNumber">Number</string>
+    <string name="ManageProfileFragment__edit_photo">Edit photo</string>
+
+    <string name="default_notification_channel_id" translatable="false">fcm_default_channel</string>
+    <string name="fcm_message">FCM Message</string>
+    <string name="channel_name">Chat Messages</string>
+    <string name="channel_description">Receive notifications for new chat messages</string>
+
+
+    <string-array name="country_phone_codes" translatable="false">
+        <item>+1 (USA)</item>
+        <item>+44 (UK)</item>
+        <item>+91 (India)</item>
+        <item>+81 (Japan)</item>
+        <item>+49 (Germany)</item>
+        <item>+33 (France)</item>
+        <item>+39 (Italy)</item>
+        <item>+7 (Russia)</item>
+        <item>+81 (Japan)</item>
+        <item>+82 (South Korea)</item>
+        <item>+61 (Australia)</item>
+        <item>+55 (Brazil)</item>
+        <item>+52 (Mexico)</item>
+        <item>+34 (Spain)</item>
+        <item>+27 (South Africa)</item>
+        <!-- Add more countries as needed -->
+    </string-array>
+
+    <string name="last_message_you">You : %s</string>
+    <string name="last_message_default">%s</string>
+
+</resources>

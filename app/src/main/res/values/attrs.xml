@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="CustomCropView">
+        <attr name="cropBorderColor" format="color" />
+        <attr name="cropBorderWidth" format="dimension" />
+        <attr name="cropBorderRadius" format="dimension" />
+        <!-- Add more attributes as needed -->
+    </declare-styleable>
+</resources>

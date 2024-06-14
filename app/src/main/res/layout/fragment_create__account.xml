@@ -1,0 +1,367 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/scroll_view"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:fitsSystemWindows="true">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp">
+
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/constraintLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginHorizontal="20dp"
+            android:layout_marginTop="32dp"
+            android:layoutDirection="ltr"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/verify_subheader">
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/countryCodeOut"
+                style="?attr/textInputFilledExposedDropdownMenuStyle"
+                android:layout_width="120dp"
+                android:layout_height="match_parent"
+                android:layout_gravity="center"
+                android:layout_margin="4dp"
+                android:hint="Code"
+                app:errorEnabled="true"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:placeholderText="+00">
+
+                <AutoCompleteTextView
+                    android:id="@+id/countryCode"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:inputType="phone"
+                    android:labelFor="@+id/countryCodeOut" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/userPhoneNo"
+                style="?attr/textInputFilledStyle"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_gravity="center"
+                android:layout_margin="4dp"
+                android:hint="@string/Registration_phoneNumber"
+                app:counterEnabled="true"
+                app:counterMaxLength="10"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@+id/countryCodeOut"
+                app:layout_constraintTop_toTopOf="parent">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/mobileNo"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:autofillHints="phone"
+                    android:inputType="phone" />
+
+            </com.google.android.material.textfield.TextInputLayout>
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <TextView
+            android:id="@+id/verify_header"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginHorizontal="24dp"
+            android:fontFamily="sans-serif-medium"
+            android:lineSpacingExtra="5dp"
+            android:text="@string/RegistrationActivity_phone_number"
+            android:textSize="25sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.5"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/toolbar" />
+
+        <TextView
+            android:id="@+id/verify_subheader"
+            style="@style/TextAppearance.Material3.BodyLarge"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="24dp"
+            android:layout_marginTop="16dp"
+            android:lineSpacingExtra="6sp"
+            android:text="@string/RegistrationActivity_enter_your_phone_number_to_get_started"
+            android:textColor="#545863"
+            app:layout_constraintTop_toBottomOf="@+id/verify_header"
+            tools:layout_editor_absoluteX="0dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/sendOtpAndGoVerify"
+            style="@style/Widget.Material3.Button.TonalButton.Icon"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginHorizontal="28dp"
+            android:layout_marginVertical="30dp"
+            android:ellipsize="end"
+            android:text="@string/send_otp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/constraintLayout" />
+
+
+        <com.google.android.material.divider.MaterialDivider
+            android:id="@+id/materialDivider"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="25dp"
+            android:layout_marginVertical="40dp"
+            app:circularflow_defaultRadius="30dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/sendOtpAndGoVerify">
+
+        </com.google.android.material.divider.MaterialDivider>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/otpVerify"
+            style="@style/Widget.Material3.TextInputLayout.FilledBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginHorizontal="25dp"
+            android:layout_marginVertical="40dp"
+            android:enabled="false"
+            android:hint="@string/otp"
+            app:errorEnabled="true"
+            app:helperTextEnabled="true"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/materialDivider">
+
+            <AutoCompleteTextView
+                android:id="@+id/sendOtp"
+                style="@style/Widget.Material3.AutoCompleteTextView.FilledBox"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:autofillHints="smsOTPCode"
+                android:importantForAutofill="yes"
+                android:inputType="number" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!--<com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/otpVerify"
+            style="?attr/textInputFilledStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginHorizontal="25dp"
+            android:layout_marginVertical="40dp"
+            android:enabled="false"
+            app:helperTextEnabled="true"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/materialDivider"
+            app:placeholderText="@string/otp">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/sendOtp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="numberSigned"
+                android:letterSpacing="2.6"/>
+
+        </com.google.android.material.textfield.TextInputLayout>-->
+
+        <!--        <TextView-->
+        <!--            android:id="@+id/timerForOTP"-->
+        <!--            style="@style/TextAppearance.Material3.BodyLarge"-->
+        <!--            android:layout_width="wrap_content"-->
+        <!--            android:layout_height="wrap_content"-->
+        <!--            android:layout_marginHorizontal="28dp"-->
+        <!--            android:lineSpacingExtra="6sp"-->
+        <!--            android:padding="5dp"-->
+        <!--            android:text="Resend OTP (00:35)"-->
+        <!--            android:textColor="#545863"-->
+        <!--            app:layout_constraintStart_toStartOf="parent"-->
+        <!--            app:layout_constraintTop_toBottomOf="@+id/otpVerify" />-->
+
+        <!--        <TextView
+                    android:id="@+id/stopAndChangeNo"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginVertical="10dp"
+                    android:clickable="true"
+                    android:contextClickable="true"
+                    android:enabled="false"
+                    android:lineSpacingExtra="6dp"
+                    android:padding="5dp"
+                    android:text="@string/change_number"
+                    android:textColor="@color/material_dynamic_secondary40"
+                    android:textSize="16sp"
+                    app:layout_constraintStart_toStartOf="@+id/otpVerify"
+                    app:layout_constraintTop_toBottomOf="@+id/resendTheOTP" />-->
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/resendTheOTP"
+            style="@style/Widget.Material3.Button.TonalButton.Icon"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginVertical="10dp"
+            android:enabled="false"
+            android:lineSpacingExtra="6dp"
+            android:text="Resend OTP"
+            app:layout_constraintStart_toStartOf="@+id/otpVerify"
+            app:layout_constraintTop_toBottomOf="@+id/otpVerify" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/verifyAndGoNext"
+            style="@style/Widget.Material3.Button.TonalButton.Icon"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginHorizontal="28dp"
+            android:layout_marginVertical="15dp"
+            android:ellipsize="end"
+            android:enabled="false"
+            android:gravity="center"
+            android:text="@string/verify_and_continue"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</ScrollView><!--<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"-->
+    <!--    xmlns:app="http://schemas.android.com/apk/res-auto"-->
+    <!--    android:id="@+id/cardView"-->
+    <!--    style="?attr/materialCardViewOutlinedStyle"-->
+    <!--    android:layout_width="match_parent"-->
+    <!--    android:layout_height="wrap_content"-->
+    <!--    android:layout_gravity="center"-->
+    <!--    android:layout_margin="16dp"-->
+    <!--    app:cardCornerRadius="15dp"-->
+    <!--    app:cardElevation="6dp">-->
+
+    <!--    <LinearLayout-->
+    <!--        android:layout_width="match_parent"-->
+    <!--        android:layout_height="match_parent"-->
+    <!--        android:orientation="vertical">-->
+
+    <!--        <com.google.android.material.textview.MaterialTextView-->
+    <!--            android:layout_width="match_parent"-->
+    <!--            android:layout_height="wrap_content"-->
+    <!--            android:layout_gravity="center"-->
+    <!--            android:layout_marginHorizontal="40dp"-->
+    <!--            android:layout_marginVertical="40dp"-->
+    <!--            android:background="@drawable/dt"-->
+    <!--            android:gravity="center"-->
+    <!--            android:padding="5dp"-->
+    <!--            android:text="Verifiy the Mobile Number"-->
+    <!--            android:textSize="18dp" />-->
+
+    <!--        <androidx.constraintlayout.widget.ConstraintLayout-->
+    <!--            android:layout_width="match_parent"-->
+    <!--            android:layout_height="wrap_content"-->
+    <!--            android:layout_gravity="center"-->
+    <!--            android:layout_margin="6dp">-->
+
+    <!--            <com.google.android.material.textfield.TextInputLayout-->
+    <!--                android:id="@+id/countryCodeOut"-->
+    <!--                style="?attr/textInputFilledExposedDropdownMenuStyle"-->
+    <!--                android:layout_width="120dp"-->
+    <!--                android:layout_height="match_parent"-->
+    <!--                android:layout_gravity="center"-->
+    <!--                android:layout_margin="5dp"-->
+    <!--                app:errorEnabled="true"-->
+    <!--                app:layout_constraintBottom_toBottomOf="parent"-->
+    <!--                app:layout_constraintStart_toStartOf="parent"-->
+    <!--                app:layout_constraintTop_toTopOf="parent">-->
+
+    <!--                <AutoCompleteTextView-->
+    <!--                    android:id="@+id/countryCode"-->
+    <!--                    android:layout_width="match_parent"-->
+    <!--                    android:layout_height="match_parent"-->
+    <!--                    android:hint="Code"-->
+    <!--                    android:inputType="number" />-->
+    <!--            </com.google.android.material.textfield.TextInputLayout>-->
+
+    <!--            <com.google.android.material.textfield.TextInputLayout-->
+    <!--                android:id="@+id/userPhoneNo"-->
+    <!--                style="?attr/textInputFilledStyle"-->
+    <!--                android:layout_width="0dp"-->
+    <!--                android:layout_height="match_parent"-->
+    <!--                android:layout_gravity="center"-->
+    <!--                android:layout_margin="5dp"-->
+    <!--                android:hint="Number"-->
+    <!--                app:counterEnabled="true"-->
+    <!--                app:counterMaxLength="10"-->
+    <!--                app:layout_constraintBottom_toBottomOf="parent"-->
+    <!--                app:layout_constraintEnd_toEndOf="parent"-->
+    <!--                app:layout_constraintStart_toEndOf="@+id/countryCodeOut"-->
+    <!--                app:layout_constraintTop_toTopOf="parent"-->
+    <!--                app:startIconDrawable="@drawable/user">-->
+
+    <!--                <com.google.android.material.textfield.TextInputEditText-->
+    <!--                    android:id="@+id/mobileNo"-->
+    <!--                    android:layout_width="match_parent"-->
+    <!--                    android:layout_height="match_parent"-->
+    <!--                    android:inputType="number" />-->
+
+    <!--            </com.google.android.material.textfield.TextInputLayout>-->
+    <!--        </androidx.constraintlayout.widget.ConstraintLayout>-->
+
+
+    <!--        <com.google.android.material.button.MaterialButton-->
+    <!--            android:id="@+id/sendOtpAndGoVerify"-->
+    <!--            style="@style/Widget.Material3.Button.TonalButton.Icon"-->
+    <!--            android:layout_width="wrap_content"-->
+    <!--            android:layout_height="wrap_content"-->
+    <!--            android:layout_gravity="center"-->
+    <!--            android:layout_marginHorizontal="11dp"-->
+    <!--            android:layout_marginVertical="40dp"-->
+    <!--            android:ellipsize="end"-->
+    <!--            android:text="Send OTP" />-->
+
+    <!--        <com.google.android.material.textfield.TextInputLayout-->
+    <!--            android:id="@+id/otpVerify"-->
+    <!--            style="?attr/textInputFilledStyle"-->
+    <!--            android:layout_width="match_parent"-->
+    <!--            android:layout_height="wrap_content"-->
+    <!--            android:layout_gravity="center"-->
+    <!--            android:layout_marginHorizontal="11dp"-->
+    <!--            android:layout_marginVertical="40dp"-->
+    <!--            android:enabled="false"-->
+    <!--            android:hint="OTP"-->
+    <!--            app:helperTextEnabled="true"-->
+    <!--            app:layout_constraintBottom_toBottomOf="parent"-->
+    <!--            app:layout_constraintEnd_toEndOf="parent"-->
+    <!--            app:layout_constraintStart_toEndOf="@+id/countryCode"-->
+    <!--            app:layout_constraintTop_toTopOf="parent">-->
+
+    <!--            <com.google.android.material.textfield.TextInputEditText-->
+    <!--                android:id="@+id/sendOtp"-->
+    <!--                android:layout_width="match_parent"-->
+    <!--                android:layout_height="wrap_content"-->
+    <!--                android:inputType="number" />-->
+
+    <!--        </com.google.android.material.textfield.TextInputLayout>-->
+
+    <!--        <com.google.android.material.button.MaterialButton-->
+    <!--            android:id="@+id/verifyAndGoNext"-->
+    <!--            style="@style/Widget.Material3.Button.TonalButton.Icon"-->
+    <!--            android:layout_width="wrap_content"-->
+    <!--            android:layout_height="wrap_content"-->
+    <!--            android:layout_gravity="center"-->
+    <!--            android:layout_marginVertical="40dp"-->
+    <!--            android:ellipsize="end"-->
+    <!--            android:gravity="center"-->
+    <!--            android:text="Verify" />-->
+    <!--    </LinearLayout>-->
+    <!--</androidx.cardview.widget.CardView>-->

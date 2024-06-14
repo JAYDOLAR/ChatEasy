@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="CustomViews.CustomCropViewHandler">
+
+    <CustomViews.CustomCropView
+        android:id="@+id/customCropView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_above="@+id/doneButton"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="0dp"
+        app:cropBorderColor="@color/white"
+        app:cropBorderRadius="5dp"
+        app:cropBorderWidth="3dp" />
+
+    <Button
+        android:id="@+id/rotateImg"
+        style="?attr/materialIconButtonFilledTonalStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginHorizontal="5dp"
+        android:layout_marginVertical="20dp"
+        app:icon="@drawable/rotate_right_1" />
+
+    <Button
+        android:id="@+id/Set_As_It"
+        style="?attr/materialIconButtonFilledTonalStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_marginHorizontal="5dp"
+        android:layout_marginVertical="20dp"
+        android:layout_toEndOf="@+id/rotateImg"
+        android:paddingHorizontal="20dp"
+        android:text="Set As It" />
+
+    <Button
+        android:id="@+id/doneButton"
+        style="?attr/materialIconButtonFilledTonalStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginHorizontal="5dp"
+        android:layout_marginVertical="20dp"
+        android:layout_toEndOf="@+id/Set_As_It"
+        android:text="Done" />
+</RelativeLayout>

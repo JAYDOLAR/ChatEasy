@@ -1,0 +1,15 @@
+<resources>
+    <!-- Base application theme. -->
+    <style name="Base.Theme.ChatEasy" parent="Theme.Material3.DynamicColors.Light.NoActionBar" />
+
+    <style name="Theme.ChatEasy" parent="Base.Theme.ChatEasy" />
+
+    <style name="Theme.App.Starting" parent="Theme.SplashScreen">
+        <!-- Set a specific background color -->
+        <item name="windowSplashScreenBackground">@android:color/white</item>
+        <!-- Set an icon and it will be shown in the center of screen -->
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_foreground</item>
+        <!-- Set the theme of the Activity that follows the splash screen -->
+        <item name="postSplashScreenTheme">@style/Base.Theme.ChatEasy</item>
+    </style>
+</resources>
