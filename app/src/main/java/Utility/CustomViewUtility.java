@@ -2,7 +2,6 @@ package Utility;
 
 import android.animation.AnimatorInflater;
 import android.animation.AnimatorSet;
-import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
@@ -11,8 +10,6 @@ import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
-import android.view.ViewTreeObserver;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -36,17 +33,18 @@ import com.google.android.material.progressindicator.IndeterminateDrawable;
 import com.google.android.material.textview.MaterialTextView;
 import com.google.firebase.storage.StorageReference;
 
+import Activitys.UserAppSettings;
+import Activitys.UserProfile;
 import Authentication.Create_UserOrEnter;
-import Models.UserStatus;
+import Models.Feedback;
 import WindowPreferences.WindowPreferencesManager;
 
 public class CustomViewUtility {
 
+    @NonNull
     public static IndeterminateDrawable<CircularProgressIndicatorSpec> initializeProgressIndicatorDrawable(Context context) {
         // Initialize CircularProgressIndicatorSpec and IndeterminateDrawable
-        CircularProgressIndicatorSpec spec = new CircularProgressIndicatorSpec(
-                context, /*attrs=*/ null, 0,
-                com.google.android.material.R.style.Widget_Material3_CircularProgressIndicator_ExtraSmall);
+        CircularProgressIndicatorSpec spec = new CircularProgressIndicatorSpec(context, /*attrs=*/ null, 0, com.google.android.material.R.style.Widget_Material3_CircularProgressIndicator_ExtraSmall);
 
         return IndeterminateDrawable.createCircularDrawable(context, spec);
     }
@@ -55,43 +53,8 @@ public class CustomViewUtility {
 
         private ImageView userProfileImg;
         private MaterialTextView currentUserNameView;
-        private MaterialTextView currentUserPhoneNoView;
+        private MaterialTextView currentUserPhoneNoView, aboutUserContent;
         private View bottomSheetInternal;
-
-        public static void focusAndShowKeyboard(@NonNull View view) {
-            view.requestFocus();
-            if (view.hasWindowFocus()) {
-                showTheKeyboardNow(view);
-            } else {
-                view.getViewTreeObserver().addOnWindowFocusChangeListener(new ViewTreeObserver.OnWindowFocusChangeListener() {
-                    @Override
-                    public void onWindowFocusChanged(boolean hasFocus) {
-                        if (hasFocus) {
-                            showTheKeyboardNow(view);
-                            view.getViewTreeObserver().removeOnWindowFocusChangeListener(this);
-                        }
-                    }
-                });
-            }
-        }
-
-        private static void showTheKeyboardNow(@NonNull View view) {
-            if (view.isFocused()) {
-                view.post(() -> {
-                    InputMethodManager inputMethodManager = getInputMethodManager(view.getContext());
-                    inputMethodManager.showSoftInput(view, InputMethodManager.SHOW_IMPLICIT);
-                });
-            }
-        }
-
-        public static void hideKeyboard(@NonNull Context context, @NonNull View view) {
-            InputMethodManager inputManager = (InputMethodManager) context.getSystemService(Activity.INPUT_METHOD_SERVICE);
-            inputManager.hideSoftInputFromWindow(view.getWindowToken(), 0);
-        }
-
-        public static InputMethodManager getInputMethodManager(Context context) {
-            return (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
-        }
 
         @NonNull
         @Override
@@ -123,27 +86,51 @@ public class CustomViewUtility {
             Button editeCurrentUserBtnView = bottomSheetDialog.findViewById(R.id.editeCurrentUserBtn);
             Button logOutCurrentUserBtnView = bottomSheetDialog.findViewById(R.id.logOutCurrentUserBtn);
             Button expandToSeeMoreDetailBTNView = bottomSheetDialog.findViewById(R.id.expandCollapseIcon);
+            Button settingCurrentUserBtnView = bottomSheetDialog.findViewById(R.id.settingCurrentUserBtn);
+            Button userFeedBackViewBtn = bottomSheetDialog.findViewById(R.id.feedbackToApp);
             CardView userDetailCardView = bottomSheetDialog.findViewById(R.id.userDetailCard);
             LinearLayout expandableContentView = bottomSheetDialog.findViewById(R.id.expandableContent);
 
             userProfileImg = bottomSheetDialog.findViewById(R.id.CurrentUserImage);
             currentUserNameView = bottomSheetDialog.findViewById(R.id.CurrentUserName);
             currentUserPhoneNoView = bottomSheetDialog.findViewById(R.id.CurrentUserPhoneNo);
+            aboutUserContent = bottomSheetDialog.findViewById(R.id.aboutUserContent);
 
             assert editeCurrentUserBtnView != null;
-            editeCurrentUserBtnView.setOnClickListener(v -> Toast.makeText(requireContext(), "Edit Button will be clicked", Toast.LENGTH_SHORT).show());
-            assert logOutCurrentUserBtnView != null;
-            logOutCurrentUserBtnView.setOnClickListener(v -> ValidationUtils.showLogoutDialog(requireContext(), (dialogInterface, i) -> {
-                if (FirebaseAuthUtils.getUserId(requireContext()) == null) {
-                    LoggerUtil.logErrors("User is null : ", FirebaseAuthUtils.getUserId(requireContext()));
-                } else {
-                    FireStoreDatabaseUtils.updateUserStatus(FirebaseAuthUtils.getUserId(requireContext()), UserStatus.AWAY);
-                }
-                NotificationUtils.saveTokenToFirestore("");
-                FirebaseAuthUtils.setLoggedIn(false, FirebaseAuthUtils.getCurrentUserId(), null, false, requireContext());
-                startActivity(new Intent(requireContext(), Create_UserOrEnter.class));
+            editeCurrentUserBtnView.setOnClickListener(v -> {
+                startActivity(new Intent(requireContext(), UserProfile.class));
                 requireActivity().finish();
-            }));
+            });
+
+            assert settingCurrentUserBtnView != null;
+            settingCurrentUserBtnView.setOnClickListener(v -> {
+                startActivity(new Intent(requireContext(), UserAppSettings.class));
+                requireActivity().finish();
+            });
+            assert logOutCurrentUserBtnView != null;
+            logOutCurrentUserBtnView.setOnClickListener(v -> {
+                ValidationUtils.showLogoutDialog(requireContext(), (dialogInterface, i) -> {
+                    String userId = FirebaseAuthUtils.getUserId(requireContext());
+
+                    if (userId == null) {
+                        LoggerUtil.logErrors("User  is null: ", null);
+                    } else {
+                        UserStatusManager userStatusManager = new UserStatusManager(userId);
+                        userStatusManager.setUserAway();
+                    }
+
+                    // Save empty token to Firestore
+                    NotificationUtils.saveTokenToFirestore("");
+
+                    // Log out the user
+                    FirebaseAuthUtils.setLoggedIn(false, FirebaseAuthUtils.getCurrentUserId(), null, false, requireContext());
+
+                    // Start the Create_UserOrEnter activity and finish the current activity
+                    Intent intent = new Intent(requireContext(), Create_UserOrEnter.class);
+                    startActivity(intent);
+                    requireActivity().finish();
+                });
+            });
 
             AnimatorSet iconRotation;
             final boolean[] isExpanded = {false};
@@ -171,7 +158,29 @@ public class CustomViewUtility {
                 isExpanded[0] = !isExpanded[0];
             });
 
+
+            assert userFeedBackViewBtn != null;
+            userFeedBackViewBtn.setOnClickListener(v -> {
+                showFeedbackDialog();
+            });
+
             return bottomSheetDialog;
+        }
+
+        private void showFeedbackDialog() {
+            FeedbackDialog dialog = FeedbackDialog.newInstance();
+            dialog.setOnFeedbackSubmitListener((feedback, success) -> {
+                if (success) {
+                    Toast.makeText(getContext(), "Thank you for your feedback!", Toast.LENGTH_SHORT).show();
+                    logFeedback(feedback);
+                }
+            });
+            dialog.show(getParentFragmentManager(), "feedback_dialog");
+        }
+
+        private void logFeedback(@NonNull Feedback feedback) {
+            // Log feedback details (for analytics or debugging)
+            Log.d("FeedBack :: ", "Feedback received: " + "\nRating: " + feedback.getRating() + "\nText: " + feedback.getFeedbackText() + "\nEmail: " + (feedback.isAnonymous() ? "Anonymous" : feedback.getUserEmail()) + "\nTimestamp: " + feedback.getTimestamp());
         }
 
         private void loadImage(Context context, Resources resources) {
@@ -184,8 +193,9 @@ public class CustomViewUtility {
                 // Load the image using Glide or any other image loading library
                 ImageUtils.loadImage(context, uri.toString(), new ImageUtils.ImageLoadListener() {
                     @Override
-                    public void onResourceReady(Drawable resource) {
+                    public Drawable onResourceReady(Drawable resource) {
                         renderProfileImage(resource);
+                        return resource;
                     }
 
                     @Override
@@ -207,28 +217,6 @@ public class CustomViewUtility {
             userProfileImg.setImageDrawable(placeholderDrawable);
         }
 
-        /*        private void loadCurrentUserDetail(Context context) {
-                    FireStoreDatabaseUtils.getUserData(FirebaseAuthUtils.getUserId(context), task -> {
-                        if (task.isSuccessful()) {
-                            DocumentSnapshot document = task.getResult();
-                            if (document != null && document.exists()) {
-                                // Handle the user data here
-                                currentUserNameView.setText(document.getString("userName"));
-                                currentUserPhoneNoView.setText(document.getString("userMobileNumber"));
-                            } else {
-                                // User document does not exist
-                                ValidationUtils.showToast(context, "User document does not exist");
-                                ValidationUtils.showSnackBarWithAction(bottomSheetInternal, "User document does not exist", "LogOut", v -> {
-
-                                });
-                            }
-                        } else {
-                            // Failed to retrieve user data
-                            ValidationUtils.showToast(context, "Failed to retrieve user data");
-                        }
-                    });
-                }
-            }*/
         private void loadCurrentUserDetail(Context context) {
             FireStoreDatabaseUtils.getUserData(FirebaseAuthUtils.getUserId(context), (snapshot, error) -> {
                 if (error != null) {
@@ -241,22 +229,32 @@ public class CustomViewUtility {
                     // Handle the user data here
                     currentUserNameView.setText(snapshot.getString("userName"));
                     currentUserPhoneNoView.setText(snapshot.getString("userMobileNumber"));
+                    aboutUserContent.setText(snapshot.getString("userAbout"));
                 } else {
                     // User document does not exist
                     ValidationUtils.showToast(context, "User document does not exist");
                     ValidationUtils.showSnackBarWithAction(bottomSheetInternal, "User document does not exist", "LogOut", v -> {
                         ValidationUtils.showLogoutDialog(requireContext(), (dialogInterface, i) -> {
-                                    if (FirebaseAuthUtils.getUserId(requireContext()) == null) {
-                                        LoggerUtil.logErrors("User is null : ", FirebaseAuthUtils.getUserId(requireContext()));
-                                    } else {
-                                        FireStoreDatabaseUtils.updateUserStatus(FirebaseAuthUtils.getUserId(requireContext()), UserStatus.AWAY);
+                            FirebaseAuthUtils.safeLogout(new FirebaseAuthUtils.OnLogoutListener() {
+                                @Override
+                                public void onLogoutComplete() {
+                                    try {
+                                        Intent intent = new Intent(requireContext(), Create_UserOrEnter.class);
+                                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                                        startActivity(intent);
+                                    } catch (Exception e) {
+                                        LoggerUtil.logErrors("Navigation Error: ", e.getMessage());
                                     }
-                                    NotificationUtils.saveTokenToFirestore("");
-                                    FirebaseAuthUtils.setLoggedIn(false, FirebaseAuthUtils.getCurrentUserId(), null, false, requireContext());
-                                    startActivity(new Intent(requireContext(), Create_UserOrEnter.class));
-                                    requireActivity().finish();
                                 }
-                        );
+
+                                @Override
+                                public void onLogoutError(Exception e) {
+                                    LoggerUtil.logErrors("Logout Error: ", e.getMessage());
+                                    ValidationUtils.showSnackBar(requireView(),
+                                            "Error logging out. Please try again.");
+                                }
+                            });
+                        });
                     });
                 }
             });

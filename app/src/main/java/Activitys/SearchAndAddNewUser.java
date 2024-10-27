@@ -35,9 +35,6 @@ import java.util.Map;
 import java.util.Set;
 
 import Adapters.ContactAdapter;
-import Models.UserStatus;
-import Utility.FireStoreDatabaseUtils;
-import Utility.FirebaseAuthUtils;
 import Utility.LoggerUtil;
 import Utility.ValidationUtils;
 
@@ -48,8 +45,8 @@ public class SearchAndAddNewUser extends AppCompatActivity {
     private FirebaseFirestore db;
     private ContactAdapter adapter; // Declaring the adapter instance
     private Toolbar SearchAddToolbarView;
-    private EditText open_search_view_edit_text_View;
-    private MaterialButton sendToSearchView;
+    /*private EditText open_search_view_edit_text_View;
+    private MaterialButton sendToSearchView;*/
     private ImageView user_expanded_image_view;
     private LinearProgressIndicator linearProgressIndicator;
 
@@ -64,9 +61,9 @@ public class SearchAndAddNewUser extends AppCompatActivity {
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
         SearchAddToolbarView = findViewById(R.id.SearchAddToolbar);
-        open_search_view_edit_text_View = findViewById(R.id.open_search_view_edit_text);
+        /*open_search_view_edit_text_View = findViewById(R.id.open_search_view_edit_text);
         sendToSearchView = findViewById(R.id.sendToSearch);
-        linearProgressIndicator = findViewById(R.id.updateNewTask);
+        linearProgressIndicator = findViewById(R.id.updateNewTask);*/
         user_expanded_image_view = findViewById(R.id.user_expanded_image);
 
         // Initialize Firebase Firestore
@@ -87,7 +84,7 @@ public class SearchAndAddNewUser extends AppCompatActivity {
             fetchContacts();
         }
         SearchAddToolbarView.setNavigationOnClickListener(v -> finish());
-        open_search_view_edit_text_View.addTextChangedListener(new TextWatcher() {
+/*        open_search_view_edit_text_View.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
 
@@ -103,7 +100,7 @@ public class SearchAndAddNewUser extends AppCompatActivity {
                 sendToSearchView.setOnClickListener(v -> open_search_view_edit_text_View.setText(""));
             }
 
-/*            @Override
+            @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 int visibility = s.toString().trim().isEmpty() ? View.GONE : View.VISIBLE;
                 sendToSearchView.setVisibility(visibility);
@@ -115,13 +112,13 @@ public class SearchAndAddNewUser extends AppCompatActivity {
                 float pxValue = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dpValue, getResources().getDisplayMetrics());
                 layoutParams.setMarginEnd(visibility == View.VISIBLE ? 0 : (int) pxValue);
                 open_search_view_edit_text_View.setLayoutParams(layoutParams);
-            }*/
+            }
 
             @Override
             public void afterTextChanged(Editable s) {
 
             }
-        });
+        });*/
     }
 
     private void fetchContacts() {
@@ -255,13 +252,17 @@ public class SearchAndAddNewUser extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
+/*
         FireStoreDatabaseUtils.updateUserStatus(FirebaseAuthUtils.getUserId(getApplicationContext()), UserStatus.ONLINE);
+*/
     }
 
     @Override
     protected void onRestart() {
         super.onRestart();
+/*
         FireStoreDatabaseUtils.updateUserStatus(FirebaseAuthUtils.getUserId(getApplicationContext()), UserStatus.ONLINE);
+*/
     }
 
 }

@@ -16,11 +16,10 @@ import java.util.Objects;
 
 import Activitys.ChatRoom;
 import Activitys.MainActivity;
-import Models.UserStatus;
-import Utility.FireStoreDatabaseUtils;
 import Utility.FirebaseAuthUtils;
 import Utility.LoggerUtil;
 import Utility.NotificationUtils;
+import Utility.UserStatusManager;
 
 public class Create_UserOrEnter extends AppCompatActivity {
 
@@ -34,7 +33,6 @@ public class Create_UserOrEnter extends AppCompatActivity {
         setContentView(R.layout.activity_create_user_or_enter);
 
         splashScreen.setKeepOnScreenCondition(() -> isLoading);
-        FirebaseApp.initializeApp(this);
 
         // Check if the activity was started by clicking on a notification
         if (getIntent().hasExtra("chatRoomId")) {
@@ -47,10 +45,8 @@ public class Create_UserOrEnter extends AppCompatActivity {
     }
 
     private void handleNotificationClick(@NonNull Bundle extras) {
-        String chatId = extras.getString("chatRoomId");
-        if (chatId != null) {
-            // Open the chat room activity with the specified chat ID
-            openChatRoom(chatId);
+        if (getIntent().hasExtra("chatRoomId")) {
+            NotificationUtils.handleNotificationClick(this, extras);
         } else {
             // Navigate to the correct screen if chat ID is null
             navigateToCorrectScreen(null);
@@ -64,14 +60,16 @@ public class Create_UserOrEnter extends AppCompatActivity {
             if (FirebaseAuthUtils.getUserId(getApplicationContext()) == null) {
                 LoggerUtil.logErrors("User is null : ", FirebaseAuthUtils.getUserId(getApplicationContext()));
             } else {
-                FireStoreDatabaseUtils.updateUserLastActivity(FirebaseAuthUtils.getUserId(getApplicationContext()));
+                /*FireStoreDatabaseUtils.updateUserLastActivity(FirebaseAuthUtils.getUserId(getApplicationContext()));*/
+                UserStatusManager userStatusManager = new UserStatusManager(FirebaseAuthUtils.getUserId(getApplicationContext()));
+                userStatusManager.setUserOnline();
             }
             isLoading = false;
             Log.e("aaaaaa", "FillUser");
 
         } else if (FirebaseAuthUtils.isLoggedIn(this) && FirebaseAuthUtils.hasRegistered(this)) {
             // Both login and user details are complete, move to the main activity
-            FireStoreDatabaseUtils.updateUserStatus(FirebaseAuthUtils.getUserId(getApplicationContext()), UserStatus.ONLINE);
+            /*FireStoreDatabaseUtils.updateUserStatus(FirebaseAuthUtils.getUserId(getApplicationContext()), UserStatus.ONLINE);*/
             NotificationUtils.getUserTokenAndSaveToFirestore();
             startActivity(new Intent(this, MainActivity.class));
             isLoading = false;
@@ -79,7 +77,9 @@ public class Create_UserOrEnter extends AppCompatActivity {
             if (FirebaseAuthUtils.getUserId(getApplicationContext()) == null) {
                 LoggerUtil.logErrors("User is null : ", FirebaseAuthUtils.getUserId(getApplicationContext()));
             } else {
+/*
                 FireStoreDatabaseUtils.updateUserLastActivity(FirebaseAuthUtils.getUserId(getApplicationContext()));
+*/
             }
             Log.e("aaaaaa", "MainPage");
 
@@ -119,15 +119,15 @@ public class Create_UserOrEnter extends AppCompatActivity {
         }
     }
 
-    private void openChatRoom(String chatId) {
+    /*private void openChatRoom(String chatId) {
         if (FirebaseAuthUtils.getUserId(getApplicationContext()) == null) {
             LoggerUtil.logErrors("User is null : ", FirebaseAuthUtils.getUserId(getApplicationContext()));
         } else {
-            FireStoreDatabaseUtils.updateUserStatus(FirebaseAuthUtils.getUserId(getApplicationContext()), UserStatus.ONLINE);
+            *//*FireStoreDatabaseUtils.updateUserStatus(FirebaseAuthUtils.getUserId(getApplicationContext()), UserStatus.ONLINE);*//*
         }
         Intent intent = new Intent(this, ChatRoom.class);
         intent.putExtra("chatRoomId", chatId);
         startActivity(intent);
         finish(); // Optionally, finish this activity after opening the chat room
-    }
+    }*/
 }

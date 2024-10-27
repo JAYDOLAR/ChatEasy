@@ -1,105 +1,20 @@
 package Utility;
 
-import android.annotation.SuppressLint;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Intent;
-import android.util.Log;
-
-import androidx.annotation.NonNull;
-import androidx.core.app.NotificationCompat;
-import androidx.core.app.NotificationManagerCompat;
-
-import com.example.chateasy.R;
-import com.google.firebase.messaging.FirebaseMessagingService;
-import com.google.firebase.messaging.RemoteMessage;
-
-import Authentication.Create_UserOrEnter;
-
-public class MyFirebaseMessagingService extends FirebaseMessagingService {
-
-    private static final String CHANNEL_ID = "chatEasy_channel";
-
-    @Override
-    public void onNewToken(@NonNull String token) {
-        super.onNewToken(token);
-    }
-
-    @Override
-    public void onMessageReceived(RemoteMessage remoteMessage) {
-        // Check if message contains data payload
-        remoteMessage.getData();
-        if (!remoteMessage.getData().isEmpty()) {
-            // Handle data payload
-            String senderName = remoteMessage.getData().get("senderName");
-            String message = remoteMessage.getData().get("message");
-            String chatRoomId = remoteMessage.getData().get("chatRoomId");
-
-            // Display notification
-            Log.e("MyFirebaseMessagingService", senderName + "--" + message + "--" + chatRoomId);
-            showNotification(senderName, message, chatRoomId);
-        }
-    }
-
-    @SuppressLint("MissingPermission")
-    private void showNotification(String senderName, String message, String chatRoomId) {
-        // Create a notification channel (for Android Oreo and higher)
-        createNotificationChannel();
-
-        // Create intent to open Create_UserOrEnter activity with chatRoomId
-        Intent intent = new Intent(this, Create_UserOrEnter.class);
-        intent.putExtra("chatRoomId", chatRoomId);
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
-
-/*
-        startActivity(new Intent(this, MainActivity.class));
-*/
-
-        // Create notification
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setSmallIcon(R.mipmap.ic_launcher_round)
-                .setContentTitle(senderName)
-                .setContentText(message)
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-                .setContentIntent(pendingIntent) // Set the PendingIntent
-                .setAutoCancel(true); // Dismiss the notification when clicked
-
-        // Show notification
-        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
-        notificationManager.notify(0, builder.build());
-    }
-
-    private void createNotificationChannel() {
-        // Create the NotificationChannel, but only on API 26+ because the NotificationChannel class is new and not in the support library
-        CharSequence name = getString(R.string.channel_name);
-        String description = getString(R.string.channel_description);
-        int importance = NotificationManager.IMPORTANCE_DEFAULT;
-        NotificationChannel channel = new NotificationChannel(CHANNEL_ID, name, importance);
-        channel.setDescription(description);
-        // Register the channel with the system
-        NotificationManager notificationManager = getSystemService(NotificationManager.class);
-        notificationManager.createNotificationChannel(channel);
-    }
-}
-
-
-
-/*
-package Utility;
-
-import android.app.NotificationChannel;
-import android.app.NotificationManager;
-import android.app.PendingIntent;
-import android.content.Context;
-import android.content.Intent;
-import android.media.RingtoneManager;
-import android.net.Uri;
+import android.graphics.Bitmap;
+import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.target.CustomTarget;
+import com.bumptech.glide.request.transition.Transition;
 import com.example.chateasy.R;
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
@@ -110,69 +25,107 @@ import Authentication.Create_UserOrEnter;
 
 public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
-    private static final String CHANNEL_ID = "default_channel";
+    private static final String TAG = "FCMService";
+    private static final String CHANNEL_ID = "chat_channel";
+
+    @Override
+    public void onNewToken(@NonNull String token) {
+        super.onNewToken(token);
+    }
 
     @Override
     public void onMessageReceived(@NonNull RemoteMessage remoteMessage) {
-        super.onMessageReceived(remoteMessage);
+        Log.d(TAG, "From: " + remoteMessage.getFrom());
 
-        // Inside onMessageReceived() method
+        // Check if message contains a notification payload
+        if (remoteMessage.getNotification() != null) {
+            Log.d(TAG, "Message Notification Body: " + remoteMessage.getNotification().getBody());
+            // Display notification
+            sendNotification(remoteMessage.getNotification().getTitle(), remoteMessage.getNotification().getBody(), null, null);
+        }
+
+        // Check if message contains data payload
         if (!remoteMessage.getData().isEmpty()) {
-            // Handle data payload.
-            Map<String, String> map = remoteMessage.getData();
-            String title = map.get("senderName");
-            String messageBody = map.get("message");
-            String chatRoomId = map.get("chatRoomId");
-            sendNotification(title, messageBody, chatRoomId);
-            // You can handle the data payload as needed.
-        }
-
-    }
-
-    @Override
-    public void onNewToken(@NonNull String s) {
-        saveTokenToFirestore(s);
-        super.onNewToken(s);
-    }
-
-    public static void saveTokenToFirestore(String token) {
-        String userId = FirebaseAuthUtils.getCurrentUser().getUid();
-        if (token != null) {
-            // Save the FCM token to Firestore
-            FireStoreDatabaseUtils.getUsersCollection().document(userId)
-                    .update("fcmToken", token)
-                    .addOnSuccessListener(aVoid -> Log.d("Firestore", "FCM token saved successfully"))
-                    .addOnFailureListener(e -> Log.e("Firestore", "Error saving FCM token", e));
+            Log.d(TAG, "Message data payload: " + remoteMessage.getData());
+            // Process message data
+            handleDataMessage(remoteMessage.getData());
         }
     }
 
-    private void sendNotification(String title, String messageBody, String chatId) {
+    private void handleDataMessage(@NonNull Map<String, String> data) {
+        String senderName = data.get("senderName");
+        String message = data.get("message");
+        String chatRoomId = data.get("chatRoomId");
+        String senderId = data.get("senderId");
+
+        Log.d(TAG, "Message from: " + senderName + ", ChatRoomId: " + chatRoomId);
+        sendNotification(senderName, message, senderId, chatRoomId);
+    }
+
+    private void sendNotification(String title, String messageBody, String senderId, String chatRoomId) {
         Intent intent = new Intent(this, Create_UserOrEnter.class);
-        intent.putExtra("chatRoomId", chatId); // Pass the chat ID as an extra
+        intent.putExtra("chatRoomId", chatRoomId);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent,
-                PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_IMMUTABLE);
 
-        Uri defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-        NotificationCompat.Builder notificationBuilder =
-                new NotificationCompat.Builder(this, CHANNEL_ID)
-                        .setSmallIcon(R.mipmap.ic_launcher_round)
-                        .setContentTitle(title)
-                        .setContentText(messageBody)
-                        .setAutoCancel(true)
-                        .setSound(defaultSoundUri)
-                        .setContentIntent(pendingIntent);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_IMMUTABLE);
 
-        NotificationManager notificationManager =
-                (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this, CHANNEL_ID)
+                .setSmallIcon(R.mipmap.ic_launcher_round)  // Default icon in case image loading fails
+                .setContentTitle(title)
+                .setContentText(messageBody)
+                .setAutoCancel(true)
+                .setContentIntent(pendingIntent);
 
-        // Since android Oreo notification channel is needed.
-        NotificationChannel channel = new NotificationChannel(CHANNEL_ID,
-                "Channel human readable title",
-                NotificationManager.IMPORTANCE_DEFAULT);
-        notificationManager.createNotificationChannel(channel);
+        NotificationManager notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
 
-        notificationManager.notify(0, notificationBuilder.build());
+        // Create notification channel for Android 8.0+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(
+                    CHANNEL_ID, "Chat Notifications", NotificationManager.IMPORTANCE_DEFAULT);
+            notificationManager.createNotificationChannel(channel);
+        }
+
+        if (senderId != null) {
+            loadProfilePictureAndShowNotification(senderId, notificationBuilder, notificationManager);
+        } else {
+            notificationManager.notify(0, notificationBuilder.build());
+        }
+    }
+
+    private void loadProfilePictureAndShowNotification(String userId, NotificationCompat.Builder notificationBuilder, NotificationManager notificationManager) {
+        // Fetch the user's profile picture URL from Firebase
+        FireStoreDatabaseUtils.getUserData(userId, (snapshot, error) -> {
+            if (error != null) {
+                Log.e(TAG, "Error fetching user data", error);
+                return;
+            }
+
+            if (snapshot != null && snapshot.exists()) {
+                // Load the image asynchronously using Glide
+                Glide.with(this)
+                        .asBitmap()
+                        .load(userId)
+                        .into(new CustomTarget<Bitmap>() {
+                            @Override
+                            public void onResourceReady(@NonNull Bitmap resource, Transition<? super Bitmap> transition) {
+                                // Set the large icon for the notification
+                                notificationBuilder.setLargeIcon(resource);
+                                notificationManager.notify(0, notificationBuilder.build());
+                            }
+
+                            @Override
+                            public void onLoadCleared(Drawable placeholder) {
+                                // Handle the case where the image is being cleared
+                            }
+
+                            @Override
+                            public void onLoadFailed(Drawable errorDrawable) {
+                                // Use the default icon if loading fails
+                                Log.e(TAG, "Error loading profile image");
+                                notificationManager.notify(0, notificationBuilder.build());
+                            }
+                        });
+            }
+        });
     }
 }
-*/

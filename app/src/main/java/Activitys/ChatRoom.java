@@ -31,6 +31,7 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textview.MaterialTextView;
 import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.storage.StorageReference;
@@ -39,6 +40,7 @@ import org.jetbrains.annotations.Contract;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,11 +48,11 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import Adapters.MessageAdapter;
+import Models.ChatRoomModel;
 import Models.MessageModel;
 import Models.MessageStatus;
 import Models.MessageType;
 import Models.User;
-import Models.UserStatus;
 import Utility.FireStoreDatabaseUtils;
 import Utility.FirebaseAuthUtils;
 import Utility.ImageUtils;
@@ -60,11 +62,12 @@ import Utility.ValidationUtils;
 public class ChatRoom extends AppCompatActivity {
 
     // Constants
-    private static final String FCM_ENDPOINT = "https://fcm.googleapis.com/fcm/send";
+    /*private static final String FCM_ENDPOINT = "https://fcm.googleapis.com/fcm/send";*/
+    private static final String FCM_API_V1_ENDPOINT = "https://fcm.googleapis.com/v1/projects/chateasy-209e2/messages:send";
+
     private static final String AUTHORIZATION_KEY = "AAAAHY2iXOY:APA91bFbSONb8YBu1pnSleiMFUc2X0xYb_xRfD4yhNSSLvgdD2LyMt7oPSKlwTcJl3oTVlyCvFgO8JUdaQmu1vL1FeRM9D6HIWLZYlvNgnkjjCDq2gMzuqFitXp3aebQLmj6yY72pHYG";
     private static final String TAG = "ChatRoom";
     private EditText msgeditText;
-    private MaterialButton sendDocButton;
     private MaterialButton sendMsgButton;
     private androidx.appcompat.widget.Toolbar presentUserChaToolbar; // Change Toolbar import to androidx.appcompat.widget.Toolbar
     private ImageView CurrentUserImageView;
@@ -72,88 +75,86 @@ public class ChatRoom extends AppCompatActivity {
     private ConstraintLayout coordinator;
     private String oppositeUserId;
     private String chatRoomId;
-    private MessageAdapter adapter;
     private RecyclerView recyclerView;
     private ListenerRegistration userStatusListenerRegistration; // Declare userStatusListenerRegistration as a class-level variable
 
-    public static void sendFCMMessage(final Context context, final String receiverId, final String message, final String chatRoomId) {
-        // Instantiate the RequestQueue.
+    public static void sendFCMMessage(final Context context, final String receiverId, final String message, final String chatRoomId, String senderId) {
         RequestQueue queue = Volley.newRequestQueue(context);
         final String[] currentUserName = {""};
 
+        // Fetch current user details (example from Firestore)
         FireStoreDatabaseUtils.getUserData(FirebaseAuthUtils.getUserId(context), (snapshot, error) -> {
             if (error != null) {
-                // Log error
-                LoggerUtil.logError("Error getting document", error);
+                Log.e(TAG, "Error getting document", error);
                 return;
             }
 
             if (snapshot != null && snapshot.exists()) {
-                User otherUserModel = snapshot.toObject(User.class);
-                if (otherUserModel != null) {
-                    // Update name using fetched data
-                    currentUserName[0] = otherUserModel.getUserName();
+                User currentUser = snapshot.toObject(User.class);
+                if (currentUser != null) {
+                    currentUserName[0] = currentUser.getUserName();
                 }
             } else {
-                LoggerUtil.logError("No such document", new Exception("Document not found"));
+                Log.e(TAG, "No such document");
             }
         });
 
-
+        // Fetch recipient's FCM token from Firestore
         DocumentReference docRef = FireStoreDatabaseUtils.getUserDocument(receiverId);
-
         docRef.get().addOnSuccessListener(documentSnapshot -> {
             if (documentSnapshot.exists()) {
                 final String recipientToken = documentSnapshot.getString("fcmToken");
                 if (recipientToken != null) {
-                    // Create the message payload
+                    // Build the message payload for FCM v1
                     JSONObject payload = new JSONObject();
-                    JSONObject data = new JSONObject();
-                    if (!currentUserName[0].isEmpty()) {
+                    JSONObject messageObject = new JSONObject();
+                    JSONObject notificationObject = new JSONObject();
+                    JSONObject dataObject = new JSONObject();
 
-                        try {
-                            Log.e(TAG, "Current User Name : " + currentUserName[0]);
-                            data.put("senderName", currentUserName[0]);
-                            data.put("message", message);
-                            data.put("chatRoomId", chatRoomId);
-                            payload.put("data", data);
-                            payload.put("to", recipientToken);
-                        } catch (JSONException e) {
-                            e.printStackTrace();
-                            Log.e(TAG, "JSON exception: " + e.getMessage());
-                            return;
-                        }
-                        // Request a string response from the provided URL.
-                        StringRequest stringRequest = new StringRequest(Request.Method.POST, FCM_ENDPOINT,
-                                response -> {
-                                    // Handle response
-                                    Log.d(TAG, "FCM message sent successfully");
-                                }, error -> {
-                            // Handle error
-                            Log.e(TAG, "FCM message sending failed: " + error.getMessage());
-                        }) {
-                            @NonNull
-                            @Override
-                            public Map<String, String> getHeaders() {
-                                Map<String, String> headers = new HashMap<>();
-                                headers.put("Authorization", "key=" + AUTHORIZATION_KEY);
-                                headers.put("Content-Type", "application/json");
-                                return headers;
-                            }
+                    try {
+                        // Notification part (optional)
+                        notificationObject.put("title", "New Message from " + currentUserName[0]);
+                        notificationObject.put("body", message);
 
-                            @Override
-                            public byte[] getBody() {
-                                return payload.toString().getBytes();
-                            }
-                        };
+                        // Data part (background message handling)
+                        dataObject.put("senderName", currentUserName[0]);
+                        dataObject.put("message", message);
+                        dataObject.put("chatRoomId", chatRoomId);
+                        dataObject.put("senderId", senderId);
 
-                        // Add the request to the RequestQueue.
-                        queue.add(stringRequest);
-                    } else {
-                        Log.e(TAG, "Error: Current user name is empty");
+                        // Add recipient token and message parts
+                        messageObject.put("token", recipientToken);
+                        messageObject.put("notification", notificationObject);  // For foreground notifications
+                        messageObject.put("data", dataObject);  // For background data processing
+
+                        payload.put("message", messageObject);
+                    } catch (JSONException e) {
+                        Log.e(TAG, "JSON exception: " + e.getMessage());
+                        return;
                     }
+
+                    // Send the request
+                    StringRequest stringRequest = new StringRequest(Request.Method.POST, FCM_API_V1_ENDPOINT,
+                            response -> Log.d(TAG, "FCM message sent successfully: " + response),
+                            error -> Log.e(TAG, "FCM message sending failed: " + Arrays.toString(error.getStackTrace()))) {
+                        @NonNull
+                        @Override
+                        public Map<String, String> getHeaders() {
+                            Map<String, String> headers = new HashMap<>();
+                            headers.put("Authorization", "Bearer " + AUTHORIZATION_KEY); // Or "key=" for legacy keys
+                            headers.put("Content-Type", "application/json");
+                            return headers;
+                        }
+
+                        @Override
+                        public byte[] getBody() {
+                            return payload.toString().getBytes();
+                        }
+                    };
+
+                    queue.add(stringRequest);
                 } else {
-                    Log.e(TAG, "Error: Recipient token is null");
+                    Log.e(TAG, "Recipient FCM token is null");
                 }
             } else {
                 Log.e(TAG, "Document does not exist for user: " + receiverId);
@@ -167,7 +168,7 @@ public class ChatRoom extends AppCompatActivity {
         setContentView(R.layout.activity_chat_room);
         // Initialize views
         initializeViews();
-        FireStoreDatabaseUtils.updateUserStatus(FirebaseAuthUtils.getUserId(getApplicationContext()), UserStatus.ONLINE);
+//        FireStoreDatabaseUtils.updateUserStatus(FirebaseAuthUtils.getUserId(getApplicationContext()), UserStatus.ONLINE);
         EdgeToEdge.enable(this);
 
         // Set navigation click listener
@@ -181,7 +182,7 @@ public class ChatRoom extends AppCompatActivity {
 
     private void initializeViews() {
         msgeditText = findViewById(R.id.open_message_view_edit_text);
-        sendDocButton = findViewById(R.id.sendDocToSend);
+        MaterialButton sendDocButton = findViewById(R.id.sendDocToSend);
         sendMsgButton = findViewById(R.id.sendToSend);
         presentUserChaToolbar = findViewById(R.id.presentUserChaToolbar);
         CurrentUserImageView = findViewById(R.id.CurrentUserImage);
@@ -192,7 +193,6 @@ public class ChatRoom extends AppCompatActivity {
 
     private void chatRoomConversationInputPanel() {
         msgeditText.addTextChangedListener(new TextWatcher() {
-            private final long TYPING_DELAY = 1000; // Adjust this value as needed
             private Timer typingTimer = new Timer();
             private boolean isTyping = false;
 
@@ -210,7 +210,7 @@ public class ChatRoom extends AppCompatActivity {
             public void afterTextChanged(Editable s) {
                 if (!isTyping) {
                     // Update user status to "Typing" when user starts typing
-                    FireStoreDatabaseUtils.updateUserStatus(FirebaseAuthUtils.getUserId(getApplicationContext()), UserStatus.TYPING);
+//                    FireStoreDatabaseUtils.updateUserStatus(FirebaseAuthUtils.getUserId(getApplicationContext()), UserStatus.TYPING);
                     isTyping = true;
                 }
 
@@ -219,11 +219,13 @@ public class ChatRoom extends AppCompatActivity {
 
                 // Start a new typing timer
                 typingTimer = new Timer();
+                // Adjust this value as needed
+                long TYPING_DELAY = 1000;
                 typingTimer.schedule(new TimerTask() {
                     @Override
                     public void run() {
                         // Update user status to "Online" after typing delay
-                        FireStoreDatabaseUtils.updateUserStatus(FirebaseAuthUtils.getUserId(getApplicationContext()), UserStatus.ONLINE);
+//                        FireStoreDatabaseUtils.updateUserStatus(FirebaseAuthUtils.getUserId(getApplicationContext()), UserStatus.ONLINE);
                         isTyping = false;
                     }
                 }, TYPING_DELAY);
@@ -254,100 +256,71 @@ public class ChatRoom extends AppCompatActivity {
 
         String receiver = oppositeUserId;
 
+        // Generate a new document reference for the message
+        DocumentReference messageRef = FirebaseFirestore.getInstance()
+                .collection("chats")
+                .document(chatRoomId)
+                .collection("messages")
+                .document();
+
         // Create a new message object
         MessageModel message = new MessageModel();
-        message.setMessageTimestamp(Timestamp.now()); // Set the creation timestamp
-        message.setSenderId(FirebaseAuthUtils.getUserId(getApplicationContext())); // Set sender ID
-        message.setReceiverId(receiver); // Set recipient ID
-        message.setMessageType(MessageType.TEXT); // Set message type
-        message.setMessageStatus(MessageStatus.SENDING); // Set message status
-        message.setMessageContent(messageText); // Set message text
-        setItToLastMessage(chatRoomId, messageText);
-        // Save the message to the database (e.g., Firebase Firestore)
-        saveMessageToDatabase(message);
-        sendFCMMessage(getApplicationContext(), receiver, messageText, chatRoomId);
-        setItToLastMessage(chatRoomId, messageText);
-        /*getToken(messageText, receiver, chatRoomId);*/
-        /*setFCMToken(messageText, FirebaseAuthUtils.getUserId(getApplicationContext()), chatRoomId);*/
-    }
-/*    private void retrieveMessages(String chatRoomId) {
-        // Query messages from the database based on the chat room ID
-        FireStoreDatabaseUtils.getChatMessages(chatRoomId, querySnapshot -> {
-            if (querySnapshot.isSuccessful()) {
-                List<MessageModel> messages = new ArrayList<>();
-                for (DocumentSnapshot document : querySnapshot.getResult()) {
-                    // Map document data to a message model object
-                    MessageModel message = document.toObject(MessageModel.class);
-                    if (message != null) {
-                        messages.add(message);
-                    }
-                }
-                // Pass the retrieved messages to the RecyclerView adapter
-                displayMessages(messages);
-            } else {
-                // Handle failure to retrieve messages
-                ValidationUtils.showToast(this, "Failed to retrieve messages. Please try again later.");
-                LoggerUtil.logError("Error retrieving messages", querySnapshot.getException());
-            }
-        });
+        message.setMessageId(messageRef.getId());  // Set the message ID to the Firestore-generated ID
+        message.setMessageTimestamp(Timestamp.now());
+        message.setSenderId(FirebaseAuthUtils.getUserId(getApplicationContext()));
+        message.setReceiverId(receiver);
+        message.setMessageType(MessageType.TEXT);
+        message.setMessageStatus(MessageStatus.SENDING); // Set initial status to SENDING
+        message.setMessageContent(messageText);
+
+        // Save the message to Firestore using the generated document reference
+        saveMessageToDatabase(message, messageRef);
     }
 
-    private void displayMessages(List<MessageModel> messages) {
-        if (messages == null || messages.isEmpty()) {
-            // Handle case where there are no messages to display
-            ValidationUtils.showToast(this, "No messages to display");
-            return;
-        }
-        String currentUserId = FirebaseAuthUtils.getUserId(getApplicationContext());
-        if (currentUserId == null || currentUserId.isEmpty()) {
-            // Handle case where current user ID is invalid or empty
-            ValidationUtils.showToast(this, "Invalid current user ID");
-            return;
-        }
-
-        // Assuming you have an instance of MessageAdapter
-        MessageAdapter adapter = new MessageAdapter(messages, currentUserId); // Pass the list of messages and the current user ID
-
-        // Assuming you have a RecyclerView with id "recyclerView" in your layout
-        RecyclerView recyclerView = findViewById(R.id.messageSendReceive);
-        if (recyclerView == null) {
-            // Handle case where RecyclerView is not found
-            ValidationUtils.showToast(this, "RecyclerView not found");
-            return;
-        }
-
-        // Set the layout manager and adapter for your RecyclerView
-        LinearLayoutManager layoutManager = new LinearLayoutManager(this);
-        layoutManager.setStackFromEnd(true);
-        layoutManager.setReverseLayout(true);// Start displaying items from the bottom of the list
-        recyclerView.setLayoutManager(layoutManager);
-        recyclerView.setAdapter(adapter);
-        setupSendMessageButton();
-    }*/
-
-    private void saveMessageToDatabase(@NonNull MessageModel message) {
-        // Set the status of the message as sending (status = 0)
-/*
-        message.setMessageStatus(MessageStatus.SENDING); // Set message status
-*/
-
-        // Assuming you have a method to save the message to the database
-        FireStoreDatabaseUtils.addMessageToChat(chatRoomId, message, task -> {
+    // Method to save the message to the database using the provided DocumentReference
+    private void saveMessageToDatabase(@NonNull MessageModel message, @NonNull DocumentReference messageRef) {
+        messageRef.set(message).addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
-                // Message sent successfully
-                // Clear the message input field
+                // Clear the message input field after successfully sending the message
                 msgeditText.getText().clear();
-                // Update the status of the message to sent (status = 1)
-                message.setMessageStatus(MessageStatus.DELIVERED);  // 1 = sent
+
+                // Update the status of the message to DELIVERED
+                updateMessageStatus(message.getMessageId(), MessageStatus.DELIVERED);
+
+                // Send FCM message to the receiver
+                sendFCMMessage(getApplicationContext(), message.getReceiverId(), message.getMessageContent(), chatRoomId, message.getSenderId());
+
+                // Update the last message in the chat room
+                setItToLastMessage(chatRoomId, message.getMessageContent());
             } else {
-                // Failed to send message
+                // Failed to send the message
                 ValidationUtils.showToast(ChatRoom.this, "Failed to send message. Please try again later.");
                 LoggerUtil.logError("Error sending message", task.getException());
-                // Update the status of the message to failed (status = 4)
-                message.setMessageStatus(MessageStatus.ERROR); // 4 = failed
+
+                // Update the status of the message to ERROR
+                updateMessageStatus(message.getMessageId(), MessageStatus.ERROR);
             }
         });
     }
+
+
+    // Method to update the message status in Firestore
+    private void updateMessageStatus(String messageId, MessageStatus status) {
+        if (messageId == null || messageId.isEmpty()) {
+            LoggerUtil.logError("Invalid message ID", new IllegalArgumentException("Message ID is null or empty"));
+            return;
+        }
+
+        // Update the status of the message in Firestore
+        FireStoreDatabaseUtils.updateMessageStatus(chatRoomId, messageId, status)
+                .addOnSuccessListener(aVoid -> {
+                    Log.d(TAG, "Message status updated to: " + status);
+                })
+                .addOnFailureListener(e -> {
+                    LoggerUtil.logError("Error updating message status", e);
+                });
+    }
+
 
     private void conversationUser() {
         Intent intent = getIntent();
@@ -361,81 +334,28 @@ public class ChatRoom extends AppCompatActivity {
         }
     }
 
-    /*private void loadProfilePicture(String userId) {
-        // Fetch user details from Firestore using userId
-        FireStoreDatabaseUtils.getUserData(userId, task -> {
-            if (task.isSuccessful()) {
-                DocumentSnapshot document = task.getResult();
-                if (document != null && document.exists()) {
-                    User otherUserModel = document.toObject(User.class);
-                    if (otherUserModel != null) {
-                        // Update name and phoneTextView using fetched data
-                        CurrentUserNameView.setText(otherUserModel.getUserName());
-
-                        // Setup the user status listener
-                        FireStoreDatabaseUtils.listenForUserStatus(userId, (snapshot, error) -> {
-                            if (snapshot != null && snapshot.exists()) {
-                                String status = snapshot.getString("status");
-                                if (status != null) {
-                                    CurrentUserStatusView.setVisibility(View.VISIBLE);
-                                    CurrentUserStatusView.setText(status);
-                                }
-                            }
-                        });
-
-                        // Assuming the profile picture URL is stored in otherUserModel
-                        FireStoreDatabaseUtils storageHelper = new FireStoreDatabaseUtils();
-                        StorageReference imageRef = storageHelper.getImageReference(userId); // Assuming you have a method to get StorageReference for the user's image
-
-                        // Download the image from Firebase Storage
-                        imageRef.getDownloadUrl().addOnSuccessListener(uri -> {
-                            // Load the image using Glide or any other image loading library
-                            ImageUtils.loadImage(this, uri.toString(), new ImageUtils.ImageLoadListener() {
-                                @Override
-                                public void onResourceReady(Drawable resource) {
-                                    CurrentUserImageView.setImageDrawable(resource);
-                                }
-
-                                @Override
-                                public void onLoadFailed() {
-                                    // Handle load failure
-                                    ValidationUtils.showToast(ChatRoom.this, "Error occurred to load the Image");
-                                }
-                            });
-                        }).addOnFailureListener(e -> showPlaceholderImage(getResources()));
-                    }
-                } else {
-                    LoggerUtil.logError("No such document", task.getException());
-                }
-            } else {
-                LoggerUtil.logError("Error getting document", task.getException());
-            }
-        });
-    }*/
-
     private void retrieveOppositeUserDetails(String chatRoomId) {
         FireStoreDatabaseUtils.getChatRoomDocument(chatRoomId)
                 .addOnSuccessListener(documentSnapshot -> {
                     if (documentSnapshot.exists()) {
-                        List<String> participantIds = (List<String>) documentSnapshot.get("participants");
-                        if (participantIds != null && participantIds.size() == 2) {
-                            oppositeUserId = getOppositeUserId(participantIds);
+                        ChatRoomModel chatRoom = documentSnapshot.toObject(ChatRoomModel.class);
+                        if (chatRoom != null && chatRoom.getParticipants() != null
+                                && chatRoom.getParticipants().size() == 2) {
+                            oppositeUserId = getOppositeUserId(chatRoom.getParticipants());
                             if (oppositeUserId != null) {
-                                // Fetch the details of the opposite user
                                 loadProfilePicture(oppositeUserId);
-                                /*retrieveMessages(chatRoomId);*/
                                 setupChatRecyclerView(chatRoomId);
                             } else {
-                                Log.e(TAG, "Error retrieving opposite user details: Opposite user ID not found");
+                                Log.e(TAG, "Error: Opposite user ID not found");
                             }
                         } else {
-                            Log.e(TAG, "Error retrieving opposite user details: Invalid participant IDs");
+                            Log.e(TAG, "Error: Invalid participant IDs");
                         }
                     } else {
-                        Log.e(TAG, "Error retrieving opposite user details: Chat room document does not exist");
+                        Log.e(TAG, "Error: Chat room document does not exist");
                     }
                 })
-                .addOnFailureListener(e -> LoggerUtil.logError("Error retrieving opposite user details", e));
+                .addOnFailureListener(e -> LoggerUtil.logError("Error retrieving chat room", e));
     }
 
     private void setupChatRecyclerView(String chatroomId) {
@@ -445,7 +365,7 @@ public class ChatRoom extends AppCompatActivity {
         FirestoreRecyclerOptions<MessageModel> options = new FirestoreRecyclerOptions.Builder<MessageModel>()
                 .setQuery(query, MessageModel.class).build();
         recyclerView = findViewById(R.id.messageSendReceive);
-        adapter = new MessageAdapter(options, FirebaseAuthUtils.getUserId(getApplicationContext()));
+        MessageAdapter adapter = new MessageAdapter(options, FirebaseAuthUtils.getUserId(getApplicationContext()));
         LinearLayoutManager manager = new LinearLayoutManager(this);
         manager.setReverseLayout(true);
         recyclerView.setLayoutManager(manager);
@@ -472,29 +392,6 @@ public class ChatRoom extends AppCompatActivity {
         return null; // Opposite user ID not found
     }
 
-/*    private static String[] loadDetail(String userId) {
-        final String[] userData = new String[2];
-        // Fetch user details from Firestore using userId
-        FireStoreDatabaseUtils.getUserData(userId, task -> {
-            if (task.isSuccessful()) {
-                DocumentSnapshot document = task.getResult();
-                if (document != null && document.exists()) {
-                    Map<String, Object> userDataMap = document.getData();
-                    if (userDataMap != null) {
-                        // Update name and phoneTextView using fetched data
-                        userData[0] = (String) userDataMap.get("userName");
-                        userData[1] = (String) userDataMap.get("userId");
-                    }
-                } else {
-                    Log.e("ChatRoom", "No such document for user: " + userId);
-                }
-            } else {
-                Log.e("ChatRoom", "Error getting document for user: " + userId, task.getException());
-            }
-        });
-        return userData;
-    }*/
-
     private void loadProfilePicture(String userId) {
         // Fetch user details from Firestore using userId
         FireStoreDatabaseUtils.getUserData(userId, (snapshot, error) -> {
@@ -517,21 +414,20 @@ public class ChatRoom extends AppCompatActivity {
                     StorageReference imageRef = storageHelper.getImageReference(userId); // Assuming you have a method to get StorageReference for the user's image
 
                     // Download the image from Firebase Storage
-                    imageRef.getDownloadUrl().addOnSuccessListener(uri -> {
-                        // Load the image using Glide or any other image loading library
-                        ImageUtils.loadImage(this, uri.toString(), new ImageUtils.ImageLoadListener() {
-                            @Override
-                            public void onResourceReady(Drawable resource) {
-                                CurrentUserImageView.setImageDrawable(resource);
-                            }
+                    imageRef.getDownloadUrl().addOnSuccessListener(uri ->
+                            ImageUtils.loadImage(this, uri.toString(), new ImageUtils.ImageLoadListener() {
+                                @Override
+                                public Drawable onResourceReady(Drawable resource) {
+                                    CurrentUserImageView.setImageDrawable(resource);
+                                    return resource;
+                                }
 
-                            @Override
-                            public void onLoadFailed() {
-                                // Handle load failure
-                                /*ValidationUtils.showToast(ChatRoom.this, "Error occurred to load the Image");*/
-                            }
-                        });
-                    }).addOnFailureListener(e -> showPlaceholderImage(getResources()));
+                                @Override
+                                public void onLoadFailed() {
+                                    // Handle load failure
+                                    /*ValidationUtils.showToast(ChatRoom.this, "Error occurred to load the Image");*/
+                                }
+                            })).addOnFailureListener(e -> showPlaceholderImage(getResources()));
                 }
             } else {
                 LoggerUtil.logError("No such document", new Exception("Document not found"));
@@ -549,113 +445,6 @@ public class ChatRoom extends AppCompatActivity {
         }
     }
 
-/*
-    private void setFCMToken(String message, String receiverId, String chatRoomId) {
-        FirebaseMessaging.getInstance().getToken()
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        // Get the device token from the task result
-                        String token = task.getResult();
-                        // Save the device token to the Firestore for the current user
-                        FireStoreDatabaseUtils.getUsersCollection().document(receiverId)
-                                .update("fcmToken", token)
-                                .addOnSuccessListener(aVoid -> {
-                                    Log.d("FCM", "Device token saved to Firestore successfully");
-                                    // Send notification to the token
-                                    sendToToken(token, message, chatRoomId);
-                                })
-                                .addOnFailureListener(e -> Log.e("FCM", "Error saving device token to Firestore", e));
-                    } else {
-                        Log.w("FCM", "Fetching FCM registration token failed", task.getException());
-                    }
-                });
-    }
-
-    public void sendToToken(String token, String message, String chatRoomId) {
-        // Construct the notification payload
-        String[] userData = loadDetail(FirebaseAuthUtils.getUserId(getApplicationContext()));
-        Map<String, String> data = new HashMap<>();
-        data.put("message", message);
-        data.put("senderName", userData[0]);
-        data.put("senderId", userData[0]);
-        data.put("chatRoomId", chatRoomId);
-
-        // Send the notification to the token
-        new RemoteMessage.Builder(token + "@gcm.googleapis.com")
-                .setMessageId(String.valueOf(System.currentTimeMillis()))
-                .setData(data)
-                .build();
-
-    }*/
-
-
-/*    private void getToken(String message, String receiverId, String chatRoomId) {
-        ValidationUtils.showToast(getApplicationContext(), "outer :"+message + receiverId + chatRoomId);
-        DocumentReference docRef = FireStoreDatabaseUtils.getUsersCollection().document(receiverId);
-
-        docRef.get().addOnSuccessListener(documentSnapshot -> {
-            if (documentSnapshot.exists()) {
-                String token = documentSnapshot.getString("fcmToken");
-                if (token != null) {
-                    JSONObject to = new JSONObject();
-                    JSONObject data = new JSONObject();
-                    try {
-                        String[] userData = loadDetail(FirebaseAuthUtils.getUserId(getApplicationContext()));
-                        if (userData != null && userData.length == 2) {
-                            data.put("senderName", userData[0]);
-                            data.put("message", message);
-                            data.put("senderId", userData[1]);
-                            data.put("chatRoomId", chatRoomId);
-
-                            to.put("receiver", token);
-                            to.put("senderData", data);
-                            ValidationUtils.showToast(getApplicationContext(), "inner :"+message + receiverId + chatRoomId);
-                            sendNotification(to);
-                        } else {
-                            Log.e("ChatRoom", "Error loading user details for sending notification");
-                        }
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                    }
-                }
-            } else {
-                Log.e("ChatRoom", "Document does not exist for user: " + receiverId);
-            }
-        }).addOnFailureListener(e -> Log.e("ChatRoom", "Error getting document: " + e.getMessage()));
-    }
-
-
-    private void sendNotification(JSONObject to) {
-        JsonObjectRequest request = new JsonObjectRequest(
-                Request.Method.POST,
-                FCM_ENDPOINT,
-                to,
-                response -> Log.d("notification", "sendNotification: " + response),
-                error -> Log.e("notification", "sendNotification: " + error)
-        ) {
-            @Override
-            public Map<String, String> getHeaders() {
-                Map<String, String> map = new HashMap<>();
-                map.put("Authorization", "key=" + AUTHORIZATION_KEY);
-                map.put("Content-Type", "application/json");
-                return map;
-            }
-
-            @Override
-            public String getBodyContentType() {
-                return "application/json";
-            }
-        };
-
-        RequestQueue requestQueue = Volley.newRequestQueue(this);
-        request.setRetryPolicy(new DefaultRetryPolicy(
-                30000,
-                DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
-                DefaultRetryPolicy.DEFAULT_BACKOFF_MULT
-        ));
-        requestQueue.add(request);
-    }*/
-
     private void showPlaceholderImage(Resources resources) {
         int placeholderDrawableId = R.drawable.user;
         Drawable placeholderDrawable = ResourcesCompat.getDrawable(resources, placeholderDrawableId, null);
@@ -665,42 +454,11 @@ public class ChatRoom extends AppCompatActivity {
     @Contract(pure = true)
     private void setItToLastMessage(String chatRoom, String lastMessage) {
         FireStoreDatabaseUtils.updateLastMessage(chatRoom).update("lastMessage", lastMessage)
-                .addOnSuccessListener(aVoid -> {
-                    // Last message updated successfully
-                    // You can add further logic here if needed
-                    Log.e(TAG, "Successfully set the lastMessage");
-                })
-                .addOnFailureListener(e -> {
-                    // Handle errors
-                    Log.e(TAG, "Error set the lastMessage: " + e.getMessage());
-                });
-    }
+                .addOnSuccessListener(aVoid -> Log.e(TAG, "Successfully set the lastMessage"))
+                .addOnFailureListener(e -> Log.e(TAG, "Error set the lastMessage: " + e.getMessage()));
 
-    @Override
-    protected void onStart() {
-        super.onStart();
-        FireStoreDatabaseUtils.updateUserStatus(FirebaseAuthUtils.getUserId(getApplicationContext()), UserStatus.ONLINE);
-    }
-
-    @Override
-    protected void onRestart() {
-        super.onRestart();
-        FireStoreDatabaseUtils.updateUserStatus(FirebaseAuthUtils.getUserId(getApplicationContext()), UserStatus.ONLINE);
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        if (FirebaseAuthUtils.getUserId(getApplicationContext()) == null) {
-            LoggerUtil.logErrors("User is null : ", FirebaseAuthUtils.getUserId(getApplicationContext()));
-        } else {
-            FireStoreDatabaseUtils.updateUserStatus(FirebaseAuthUtils.getUserId(getApplicationContext()), UserStatus.OFFLINE);
-        }
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        FireStoreDatabaseUtils.updateUserStatus(FirebaseAuthUtils.getUserId(getApplicationContext()), UserStatus.ONLINE);
+        FireStoreDatabaseUtils.updateLastMessageTimestamp(chatRoom).update("lastMessageTimestamp", Timestamp.now())
+                .addOnCompleteListener(task -> Log.e(TAG, "Successfully set the lastMessage  Timestamp"))
+                .addOnFailureListener(e -> Log.e(TAG, "Error set the lastMessage Timestamp: " + e.getMessage()));
     }
 }

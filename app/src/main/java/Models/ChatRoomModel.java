@@ -11,6 +11,8 @@ public class ChatRoomModel {
     private String lastMessage;
     private int numberOfUnreadMessages;
     private Timestamp chatRoomCreatedTimestamp;
+    private Timestamp lastMessageTimestamp;
+    private String lastMessageSenderId;
     // Constructor, getters, and setters
 
     @Contract(pure = true)
@@ -18,11 +20,13 @@ public class ChatRoomModel {
     }
 
     @Contract(pure = true)
-    public ChatRoomModel(List<String> participants, String lastMessage, int numberOfUnreadMessages, Timestamp chatRoomCreatedTimestamp) {
+    public ChatRoomModel(List<String> participants, String lastMessage, int numberOfUnreadMessages, Timestamp chatRoomCreatedTimestamp, Timestamp lastMessageTimestamp,String lastMessageSenderId) {
         this.participants = participants;
         this.lastMessage = lastMessage;
         this.numberOfUnreadMessages = numberOfUnreadMessages;
         this.chatRoomCreatedTimestamp = chatRoomCreatedTimestamp;
+        this.lastMessageTimestamp = lastMessageTimestamp;
+        this.lastMessageSenderId = lastMessageSenderId;
     }
 
     public List<String> getParticipants() {
@@ -57,6 +61,14 @@ public class ChatRoomModel {
         this.chatRoomCreatedTimestamp = chatRoomCreatedTimestamp;
     }
 
+    public Timestamp getLastMessageTimestamp() {
+        return lastMessageTimestamp;
+    }
+
+    public void setLastMessageTimestamp(Timestamp lastMessageTimestamp) {
+        this.lastMessageTimestamp = lastMessageTimestamp;
+    }
+
     public static class Participant {
         private UserStatus userStatus;
         private int messageCount;
@@ -84,5 +96,13 @@ public class ChatRoomModel {
         public void setMessageCount(int messageCount) {
             this.messageCount = messageCount;
         }
+    }
+
+    public String getLastMessageSenderId() {
+        return lastMessageSenderId;
+    }
+
+    public void setLastMessageSenderId(String lastMessageSenderId) {
+        this.lastMessageSenderId = lastMessageSenderId;
     }
 }

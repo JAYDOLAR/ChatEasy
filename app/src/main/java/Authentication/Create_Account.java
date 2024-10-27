@@ -304,7 +304,7 @@ public class Create_Account extends Fragment {
 
     private void startOtpTimer(long[] timeoutSeconds) {
         timer = new Timer();
-        timer.scheduleAtFixedRate(new TimerTask() {
+        timer.schedule(new TimerTask() {
             @Override
             public void run() {
                 if (isAdded()) {
@@ -337,7 +337,7 @@ public class Create_Account extends Fragment {
         });
     }
 
-    private void replaceFragment(Fragment fragment, String phoneNumber) {
+    private void replaceFragment(@NonNull Fragment fragment, String phoneNumber) {
         FragmentManager fragmentManager = requireActivity().getSupportFragmentManager();
         fragmentManager.popBackStackImmediate(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
         FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();

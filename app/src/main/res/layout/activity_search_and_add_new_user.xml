@@ -45,7 +45,7 @@
             android:indeterminate="true" />-->
     </com.google.android.material.appbar.AppBarLayout>
 
-    <androidx.constraintlayout.widget.ConstraintLayout
+<!--    <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/constraintLayout3"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
@@ -92,7 +92,7 @@
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
-        <!--
+
                 <com.google.android.material.progressindicator.LinearProgressIndicator
                     android:id="@+id/updateNewTask"
                     android:layout_width="match_parent"
@@ -103,7 +103,7 @@
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/open_search_view_edit_text" />-->
+                    app:layout_constraintTop_toBottomOf="@+id/open_search_view_edit_text" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <com.google.android.material.progressindicator.LinearProgressIndicator
@@ -115,7 +115,7 @@
         android:visibility="invisible"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/constraintLayout3" />
+        app:layout_constraintTop_toBottomOf="@+id/constraintLayout3" /> -->
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/findOutUsers"
@@ -127,7 +127,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/constraintLayout3" />
+        app:layout_constraintTop_toBottomOf="@+id/appbarlayout" />
 
     <ImageView
         android:id="@+id/user_expanded_image"

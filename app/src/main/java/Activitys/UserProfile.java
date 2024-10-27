@@ -22,5 +22,17 @@ public class UserProfile extends AppCompatActivity {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+        if (savedInstanceState == null) {
+            // Create new fragment instance
+            Fragment_User_Profile user_profile_fragment = new Fragment_User_Profile();
+
+            // Get FragmentManager and start transaction
+            getSupportFragmentManager()
+                    .beginTransaction()
+                    .setReorderingAllowed(true)
+                    .setCustomAnimations(android.R.animator.fade_in, android.R.animator.fade_out)
+                    .add(R.id.fragment_section_setting_edit, user_profile_fragment)
+                    .commit();
+        }
     }
 }

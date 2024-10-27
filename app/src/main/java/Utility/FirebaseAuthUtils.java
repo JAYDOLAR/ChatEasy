@@ -5,9 +5,9 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.util.Log;
 
-import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.auth.PhoneAuthCredential;
 import com.google.firebase.auth.PhoneAuthOptions;
 import com.google.firebase.auth.PhoneAuthProvider;
 
@@ -29,7 +29,7 @@ public class FirebaseAuthUtils {
 
     public static String getCurrentUserId() {
         FirebaseUser currentUser = getCurrentUser();
-        return currentUser.getUid(); // No need for null check, getUid() already returns an empty string if currentUser is null
+        return currentUser != null ? currentUser.getUid() : null;
     }
 
     public static void sendVerificationCode(Activity activity, String phoneNumber, PhoneAuthProvider.OnVerificationStateChangedCallbacks callbacks) {
@@ -47,11 +47,11 @@ public class FirebaseAuthUtils {
     }
 
     public static void verifyPhoneNumberWithCode(String code, String verificationId, VerificationCallback callback) {
-        AuthCredential credential = PhoneAuthProvider.getCredential(verificationId, code);
+        PhoneAuthCredential credential = PhoneAuthProvider.getCredential(verificationId, code);
         signInWithPhoneAuthCredential(credential, callback);
     }
 
-    private static void signInWithPhoneAuthCredential(AuthCredential credential, VerificationCallback callback) {
+    private static void signInWithPhoneAuthCredential(PhoneAuthCredential credential, VerificationCallback callback) {
         auth.signInWithCredential(credential)
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
@@ -86,17 +86,16 @@ public class FirebaseAuthUtils {
         editor.putString(USER_ID_KEY, userId);
         editor.putString(KEY_PHONE_NUMBER, phoneNumber);
         editor.putBoolean(HAS_REGISTERED_KEY, hasRegistered);
-        editor.apply(); // Use apply() instead of commit()
+        editor.apply();
     }
 
     public static void setLoggedIn(boolean isLoggedIn, String currentUserId, String CurrentRegisteredNumber, boolean hasRegistered, Context context) {
         if (isLoggedIn) {
-            // Set the user ID when logging in
+
             setUserId(currentUserId, CurrentRegisteredNumber, hasRegistered, context);
         } else {
-            // Clear the user ID when logging out
             clearUserId(context);
-            logout(); // Call logout() separately when needed
+            logout();
         }
     }
 
@@ -106,7 +105,7 @@ public class FirebaseAuthUtils {
         editor.remove(USER_ID_KEY);
         editor.remove(KEY_PHONE_NUMBER);
         editor.remove(HAS_REGISTERED_KEY);
-        editor.apply(); // Use apply() instead of commit()
+        editor.clear().apply();
     }
 
     public static boolean hasRegistered(Context context) {
@@ -123,6 +122,37 @@ public class FirebaseAuthUtils {
         auth.signOut();
     }
 
+    // Add this utility method
+    public static void safeLogout(OnLogoutListener listener) {
+        try {
+            String currentUserId = getCurrentUserId();
+            if (currentUserId != null) {
+                UserStatusManager userStatusManager = new UserStatusManager(currentUserId);
+                userStatusManager.setUserAway();
+            }
+
+            NotificationUtils.saveTokenToFirestore("")
+                    .addOnCompleteListener(task -> {
+
+                        if (listener != null) {
+                            listener.onLogoutComplete();
+                        }
+                    });
+        } catch (Exception e) {
+            LoggerUtil.logErrors("Logout Error: ", e.getMessage());
+            if (listener != null) {
+                listener.onLogoutError(e);
+            }
+        }
+    }
+
+    // Listener interface for logout events
+    public interface OnLogoutListener {
+        void onLogoutComplete();
+
+        void onLogoutError(Exception e);
+    }
+
     // Extract common code for creating PhoneAuthOptions.Builder
     private static PhoneAuthOptions.Builder createPhoneAuthOptionsBuilder(Activity activity, String phoneNumber, PhoneAuthProvider.OnVerificationStateChangedCallbacks callbacks) {
         return PhoneAuthOptions.newBuilder(FirebaseAuthUtils.auth)
@@ -131,19 +161,6 @@ public class FirebaseAuthUtils {
                 .setActivity(activity)
                 .setCallbacks(callbacks);
     }
-   /* public static boolean isRegistered(Context context) {
-        sharedPreferences = context.getSharedPreferences(SHARED_PREFS_NAME, Context.MODE_PRIVATE);
-        return hasRegistered(context);
-    }*/
-
-    /*public static void setRegistered(boolean hasRegistered, String currentUserId, Context context) {
-        if (Objects.equals(getUserId(context), currentUserId)) {
-            sharedPreferences = context.getSharedPreferences(SHARED_PREFS_NAME, Context.MODE_PRIVATE);
-            SharedPreferences.Editor editor = sharedPreferences.edit();
-            editor.putBoolean(HAS_REGISTERED_KEY, hasRegistered);
-            editor.apply(); // Use apply() instead of commit()
-        }
-    }*/
 
     public interface VerificationCallback {
         void onVerificationCompleted(FirebaseUser user);

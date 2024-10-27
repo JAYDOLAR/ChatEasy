@@ -1,10 +1,13 @@
 package Authentication;
 
+import static Utility.ValidationUtils.showDatePicker;
+
 import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.text.Editable;
@@ -14,10 +17,10 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
-import android.widget.ScrollView;
 import android.widget.TextView;
 
 import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.PickVisualMediaRequest;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
@@ -25,7 +28,6 @@ import androidx.fragment.app.Fragment;
 
 import com.example.chateasy.R;
 import com.google.android.material.button.MaterialButton;
-import com.google.android.material.datepicker.MaterialDatePicker;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
@@ -33,6 +35,7 @@ import com.google.firebase.Timestamp;
 
 import org.jetbrains.annotations.Contract;
 
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -48,47 +51,44 @@ import Utility.FirebaseAuthUtils;
 import Utility.FirebaseMessagingUtils;
 import Utility.LoggerUtil;
 import Utility.NotificationUtils;
+import Utility.UserStatusManager;
 import Utility.ValidationUtils;
 
 public class Fill_User_Details extends Fragment {
     private View view;
-    private MaterialButton photoSelectView, finishFillFormView;
+    private MaterialButton finishFillFormView;
     private TextView namePreviewView;
     private TextInputEditText userFirstNameView, userLastNameView, userEmailIdView, userBirthDateView, userAboutView;
     private TextInputLayout userFirstNameLayoutView;
     private TextInputLayout userBirthDateLayoutView;
     private ImageView userImgView;
-    private ScrollView fillUserDetailFrameView;
-    private ActivityResultLauncher<String> requestPermissionLauncher;
-    private ActivityResultLauncher<Intent> pickImageLauncher;
     private Uri selectedImageUri;
     private Uri croppedImageUri;
-    private final ActivityResultLauncher<Intent> cropActivityResultLauncher =
-            registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
-                    result -> {
-                        if (result.getResultCode() == Activity.RESULT_OK) {
-                            assert result.getData() != null;
-                            String croppedImageUriString = result.getData().getStringExtra("croppedImageUri");
-                            croppedImageUri = Uri.parse(croppedImageUriString);
-                            userImgView.setImageURI(croppedImageUri);
-                        }
-                    });
     private String userPhoneNumber;
+
+    private UserStatusManager userStatusManager;
+
+    private ActivityResultLauncher<PickVisualMediaRequest> pickMedia;
+    private ActivityResultLauncher<Intent> pickImageLauncher;
+    private ActivityResultLauncher<String> requestPermissionLauncher;
+    private ActivityResultLauncher<Intent> cropActivityResultLauncher;
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         view = inflater.inflate(R.layout.fragment_fill__user__details, container, false);
         initializeViews();
         setEndIconOnClickListener();
-        getRequestPermissionLauncher();
+        initializePhotoPickerLauncher();
+        initializeTraditionalImagePickerLauncher();
+        initializePermissionLauncher();
+        initializeCropActivityLauncher();
         setOnFinishFillForm();
         setNamePreviewViewFrom();
         return view;
     }
 
     private void initializeViews() {
-        fillUserDetailFrameView = view.findViewById(R.id.fillUserDetailFrame);
-        photoSelectView = view.findViewById(R.id.photoSelect);
+        MaterialButton photoSelectView = view.findViewById(R.id.photoSelect);
         finishFillFormView = view.findViewById(R.id.finish_fillForm);
         namePreviewView = view.findViewById(R.id.name_preview);
         userFirstNameView = view.findViewById(R.id.user_FirstName);
@@ -97,14 +97,109 @@ public class Fill_User_Details extends Fragment {
         userBirthDateView = view.findViewById(R.id.user_birthDate);
         userAboutView = view.findViewById(R.id.user_About);
         userFirstNameLayoutView = view.findViewById(R.id.user_firstNameLayout);
-        /*TextInputLayout userLastNameLayoutView = view.findViewById(R.id.user_LastNameLayout);
-        TextInputLayout userEmailIdLayoutView = view.findViewById(R.id.user_EmailIdLayout);*/
         userBirthDateLayoutView = view.findViewById(R.id.user_birthDateLayout);
         userImgView = view.findViewById(R.id.userImg);
+
+        photoSelectView.setOnClickListener(v -> checkAndPickImage());
+    }
+
+    private void initializePhotoPickerLauncher() {
+        pickMedia = registerForActivityResult(new ActivityResultContracts.PickVisualMedia(), uri -> {
+            if (uri != null) {
+                selectedImageUri = uri;
+                startCropViewActivity();
+            } else {
+                Log.d("PhotoPicker", "No media selected");
+            }
+        });
+    }
+
+    private void initializeTraditionalImagePickerLauncher() {
+        pickImageLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == Activity.RESULT_OK) {
+                        Intent data = result.getData();
+                        if (data != null && data.getData() != null) {
+                            selectedImageUri = data.getData();
+                            startCropViewActivity();
+                        }
+                    }
+                });
+    }
+
+    private void initializePermissionLauncher() {
+        requestPermissionLauncher = registerForActivityResult(new ActivityResultContracts.RequestPermission(),
+                isGranted -> {
+                    if (isGranted) {
+                        launchTraditionalImagePicker();
+                    } else {
+                        showPermissionDeniedDialog();
+                    }
+                });
+    }
+
+    private void initializeCropActivityLauncher() {
+        cropActivityResultLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == Activity.RESULT_OK) {
+                        Intent data = result.getData();
+                        if (data != null) {
+                            String croppedImageUriString = data.getStringExtra("croppedImageUri");
+                            croppedImageUri = Uri.parse(croppedImageUriString);
+                            userImgView.setImageURI(croppedImageUri);
+                        }
+                    }
+                });
+    }
+
+    private void checkAndPickImage() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            launchPhotoPicker();
+        } else {
+            checkPermissionAndLaunchTraditionalPicker();
+        }
+    }
+
+    private void launchPhotoPicker() {
+        pickMedia.launch(new PickVisualMediaRequest.Builder()
+                .setMediaType(ActivityResultContracts.PickVisualMedia.ImageOnly.INSTANCE)
+                .build());
+    }
+
+    private void checkPermissionAndLaunchTraditionalPicker() {
+        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.READ_EXTERNAL_STORAGE)
+                == PackageManager.PERMISSION_GRANTED) {
+            launchTraditionalImagePicker();
+        } else {
+            requestPermissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE);
+        }
+    }
+
+    private void launchTraditionalImagePicker() {
+        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+        pickImageLauncher.launch(intent);
+    }
+
+    private void showPermissionDeniedDialog() {
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Permission Denied")
+                .setMessage("To pick an image, the app needs permission to access your storage. Please grant the permission in the app settings.")
+                .setPositiveButton("OK", (dialog, which) -> {
+                })
+                .setNegativeButton("Settings", (dialog, which) -> openAppSettings())
+                .show();
+    }
+
+    private void openAppSettings() {
+        Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+        Uri uri = Uri.fromParts("package", requireActivity().getPackageName(), null);
+        intent.setData(uri);
+        startActivity(intent);
     }
 
     private void setEndIconOnClickListener() {
-        userBirthDateLayoutView.setEndIconOnClickListener(v -> showDatePicker());
+        userBirthDateLayoutView.setEndIconOnClickListener(v -> showDatePicker(getParentFragmentManager(), "Select a BirthDate", userBirthDateView, "dd/MM/yyyy"));
     }
 
     private void setNamePreviewViewFrom() {
@@ -112,7 +207,7 @@ public class Fill_User_Details extends Fragment {
         userLastNameView.addTextChangedListener(new NameTextWatcher());
     }
 
-    private void showDatePicker() {
+/*    private void showDatePicker() {
         MaterialDatePicker<Long> datePicker = MaterialDatePicker.Builder.datePicker()
                 .setTitleText("Select a BirthDate")
                 .build();
@@ -131,76 +226,13 @@ public class Fill_User_Details extends Fragment {
                 }
             }
         });
-    }
+    }*/
 
     private void setOnFinishFillForm() {
         finishFillFormView.setOnClickListener(v -> {
             finishFillFormView.setIcon(CustomViewUtility.initializeProgressIndicatorDrawable(requireContext()));
             setSelectedUserValues();
         });
-    }
-
-    private void getRequestPermissionLauncher() {
-        requestPermissionLauncher = registerForActivityResult(new ActivityResultContracts.RequestPermission(),
-                isGranted -> {
-                    if (isGranted) {
-                        launchPickImageIntent();
-                    } else {
-                        showPermissionDeniedDialog();
-                    }
-                });
-
-        pickImageLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
-                result -> {
-                    if (result.getResultCode() == Activity.RESULT_OK) {
-                        handleImagePickResult(result.getData());
-                    }
-                });
-
-        photoSelectView.setOnClickListener(v -> checkPermissionAndPickImage());
-    }
-
-    private void checkPermissionAndPickImage() {
-        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.READ_EXTERNAL_STORAGE)
-                == PackageManager.PERMISSION_GRANTED) {
-            launchPickImageIntent();
-        } else {
-            requestPermissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE);
-        }
-    }
-
-    private void launchPickImageIntent() {
-        Intent pickImageIntent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-        pickImageLauncher.launch(pickImageIntent);
-    }
-
-    private void handleImagePickResult(Intent data) {
-        if (data == null || data.getData() == null) {
-            return;
-        }
-
-        selectedImageUri = data.getData();
-        try {
-            startCropViewActivity();
-        } catch (Exception e) {
-            LoggerUtil.logError("An error occurred", e);
-        }
-    }
-
-    private void showPermissionDeniedDialog() {
-        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(requireContext());
-        builder.setTitle("Permission Denied");
-        builder.setMessage("To pick an image, the app needs permission to access your storage. Please grant the permission in the app settings.");
-        builder.setPositiveButton("OK", (dialog, which) -> builder.setCancelable(true));
-        builder.setNegativeButton("Grant", (dialog, which) -> redirectToAppSettings());
-        builder.show();
-    }
-
-    private void redirectToAppSettings() {
-        Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-        Uri uri = Uri.fromParts("package", requireActivity().getPackageName(), null);
-        intent.setData(uri);
-        startActivity(intent);
     }
 
     private void startCropViewActivity() {
@@ -210,55 +242,63 @@ public class Fill_User_Details extends Fragment {
     }
 
     private void setSelectedUserValues() {
+        // Validate only the first name
         String firstName = ValidationUtils.getStringFromEditText(userFirstNameView);
         if (firstName.isEmpty()) {
-            userFirstNameLayoutView.setError("required to fill this field");
+            userFirstNameLayoutView.setError("This field is required");
             return;
         }
         userFirstNameLayoutView.setError(null);
+
+        // Retrieve other user input fields without enforcing required validation
         String lastName = ValidationUtils.getStringFromEditText(userLastNameView);
-        String fullName = firstName + " " + lastName;
-        if (ValidationUtils.isValidUsername(fullName)) {
-            ValidationUtils.showSnackBar(fillUserDetailFrameView, "Please input valid user Name");
-        }
         String userEmail = ValidationUtils.getStringFromEditText(userEmailIdView);
         String userAbout = ValidationUtils.getStringFromEditText(userAboutView);
 
+        // Concatenate first and last name (allowing last name to be empty)
+        String fullName = firstName + (lastName.isEmpty() ? "" : " " + lastName);
+
+        // Retrieve user phone number from arguments if available
         Bundle args = getArguments();
-        userPhoneNumber = "";
-        if (args != null) {
-            userPhoneNumber = args.getString("phoneNumber", "");
+        userPhoneNumber = args != null ? args.getString("phoneNumber", "") : "";
+
+        // Parse date of birth if provided
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.US);
+        Date userDob = null;
+        String dobString = ValidationUtils.getStringFromEditText(userBirthDateView);
+        if (!dobString.isEmpty()) {
+            try {
+                userDob = sdf.parse(dobString);
+            } catch (ParseException e) {
+                LoggerUtil.logError("Error parsing date string", e);
+                ValidationUtils.showToast(requireContext(), "Error parsing date");
+                return;
+            }
         }
 
-        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.US);
-        Date userDob;
-        try {
-            userDob = sdf.parse(ValidationUtils.getStringFromEditText(userBirthDateView));
-        } catch (Exception e) {
-            LoggerUtil.logError("Error parsing date string", e);
-            ValidationUtils.showToast(requireContext(), "Error parsing date");
-            return;
-        }
+        // Retrieve FCM token asynchronously and proceed with user creation
         final String[] FCMToken = {""};
+        Date finalUserDob = userDob;
         FirebaseMessagingUtils.getUserTokenAndSaveToFirestore(new FirebaseMessagingUtils.TokenCallback() {
             @Override
             public void onTokenReceived(String token) {
-                // Handle token
                 Log.d("FCM Token Received", token);
-                // Save token to Firestore or perform other operations
                 FCMToken[0] = token;
+                saveUserDetails(fullName, userPhoneNumber, userEmail, userAbout, finalUserDob, FCMToken[0]);
             }
 
             @Override
             public void onTokenError(Exception exception) {
-                // Handle error
                 Log.e("FCM Token Error", Objects.requireNonNull(exception.getMessage()));
-                FCMToken[0] = "";
+                FCMToken[0] = ""; // Set empty token if an error occurs
+                saveUserDetails(fullName, userPhoneNumber, userEmail, userAbout, finalUserDob, FCMToken[0]);
             }
         });
+    }
 
-
-        User user = new User(FirebaseAuthUtils.getCurrentUserId(), fullName, userPhoneNumber, userEmail, userAbout, userDob, Timestamp.now(), Timestamp.now(), Timestamp.now(), UserStatus.ONLINE, FCMToken[0]);
+    private void saveUserDetails(String fullName, String phoneNumber, String email, String about, Date dob, String token) {
+        User user = new User(FirebaseAuthUtils.getCurrentUserId(), fullName, phoneNumber, email, about, dob,
+                Timestamp.now(), Timestamp.now(), Timestamp.now(), UserStatus.ONLINE, token);
 
         boolean[] successFlags = {false, false};
 
@@ -268,6 +308,15 @@ public class Fill_User_Details extends Fragment {
                         successFlags[0] = true;
                         checkAndStartMainActivity(successFlags);
                         NotificationUtils.getUserTokenAndSaveToFirestore();
+
+                        String userId = FirebaseAuthUtils.getUserId(requireContext());
+                        if (userId != null) {
+                            userStatusManager = new UserStatusManager(userId);
+                        } else {
+                            Log.e("ChatApplication", "User ID is null. Cannot initialize UserStatusManager.");
+                        }
+                    } else {
+                        Log.e("ChatApplication", "Failed to save user details to Firestore.");
                     }
                 });
 
@@ -288,12 +337,13 @@ public class Fill_User_Details extends Fragment {
                 }
             };
 
-            storageHelper.uploadImage(croppedImageUri, FirebaseAuthUtils.getCurrentUserId(), uploadListener);
+            storageHelper.uploadUserProfileImage(croppedImageUri, uploadListener, FirebaseAuthUtils.getCurrentUserId());
         } else {
             ValidationUtils.showToast(requireContext(), "Cropped image URI is null");
             checkAndStartMainActivity(successFlags);
         }
     }
+
 
     private void checkAndStartMainActivity(@NonNull boolean[] successFlags) {
         if (successFlags[0] && successFlags[1]) {

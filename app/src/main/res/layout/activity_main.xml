@@ -27,7 +27,7 @@
                 android:elevation="0dp"
                 app:layout_collapseMode="pin"
                 app:menu="@menu/profile"
-                app:title="ChatEasy" />
+                app:title="@string/app_name" />
 
             <com.google.android.material.progressindicator.LinearProgressIndicator
                 android:id="@+id/updateNewTask"

@@ -18,10 +18,14 @@ import com.example.chateasy.R;
 import com.firebase.ui.firestore.FirestoreRecyclerAdapter;
 import com.firebase.ui.firestore.FirestoreRecyclerOptions;
 import com.google.android.material.card.MaterialCardView;
+import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.storage.StorageReference;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 import java.util.Objects;
 
 import Activitys.ChatRoom;
@@ -81,14 +85,14 @@ public class UsersAdapter extends FirestoreRecyclerAdapter<ChatRoomModel, UsersA
                 }
             });
 
-            itemView.setOnLongClickListener(v -> {
+            /*itemView.setOnLongClickListener(v -> {
                 int position = getBindingAdapterPosition();
                 if (position != RecyclerView.NO_POSITION) {
                     toggleSelection(position);
                     return true;
                 }
                 return false;
-            });
+            });*/
         }
 
         public void bind(@NonNull ChatRoomModel model) {
@@ -98,8 +102,12 @@ public class UsersAdapter extends FirestoreRecyclerAdapter<ChatRoomModel, UsersA
                             User otherUserModel = task.getResult().toObject(User.class);
                             if (otherUserModel != null) {
                                 userName.setText(otherUserModel.getUserName());
-                                latestMassageTimestamp.setText(null);
+
+                                final String formattedTime = getString(model);
+                                latestMassageTimestamp.setVisibility(View.VISIBLE);
+                                latestMassageTimestamp.setText(formattedTime);
                                 badgeUnReadMsges.setText(null);
+
 
                                 String lastMessage = (model.getLastMessage() != null) ? model.getLastMessage() : "";
                                 if (model.getLastMessage() != null) {
@@ -125,8 +133,9 @@ public class UsersAdapter extends FirestoreRecyclerAdapter<ChatRoomModel, UsersA
                                 StorageReference imageRef = storageHelper.getImageReference(otherUserModel.getUserId());
                                 imageRef.getDownloadUrl().addOnSuccessListener(uri -> ImageUtils.loadImage(context, uri.toString(), new ImageUtils.ImageLoadListener() {
                                     @Override
-                                    public void onResourceReady(Drawable resource) {
+                                    public Drawable onResourceReady(Drawable resource) {
                                         currentUserImage.setImageDrawable(resource);
+                                        return resource;
                                     }
 
                                     @Override
@@ -137,6 +146,20 @@ public class UsersAdapter extends FirestoreRecyclerAdapter<ChatRoomModel, UsersA
                             }
                         }
                     });
+        }
+
+        private @NonNull String getString(@NonNull ChatRoomModel model) {
+            Timestamp lastMessageTimestamp = model.getLastMessageTimestamp();
+
+            Date date = null;
+            String formattedTime = "";
+
+            if (lastMessageTimestamp != null) {
+                date = lastMessageTimestamp.toDate();
+                SimpleDateFormat sdf = new SimpleDateFormat("hh:mm a", Locale.getDefault());
+                formattedTime = sdf.format(date);
+            }
+            return formattedTime;
         }
 
         private void toggleSelection(int position) {

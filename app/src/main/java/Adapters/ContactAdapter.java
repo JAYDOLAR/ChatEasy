@@ -257,8 +257,9 @@ public class ContactAdapter extends RecyclerView.Adapter<ContactAdapter.ContactV
                             // Load the image using Glide or any other image loading library
                             ImageUtils.loadImage(context, uri.toString(), new ImageUtils.ImageLoadListener() {
                                 @Override
-                                public void onResourceReady(Drawable resource) {
+                                public Drawable onResourceReady(Drawable resource) {
                                     profileImageView.setImageDrawable(resource);
+                                    return resource;
                                 }
 
                                 @Override

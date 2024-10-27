@@ -12,4 +12,28 @@
     <style name="Widget.Catalog.BottomSheet.Modal.Scrollable" parent="Widget.Material3.BottomSheet.Modal">
         <item name="paddingBottomSystemWindowInsets">false</item>
     </style>
+    <style name="ThemeOverlay.ConvoFlow.EditProfileInput" parent="ThemeOverlay.MaterialComponents">
+        <item name="colorAccent">#2c6bed</item>
+        <item name="colorControlNormal">#2c6bed</item>
+        <item name="colorControlHighlight">#2c6bed</item>
+        <item name="colorControlActivated">#2c6bed</item>
+    </style>
+    <style name="Widget.ConvoFlow.TextInputLayout.FilledBox" parent="Widget.MaterialComponents.TextInputLayout.FilledBox">
+        <item name="android:paddingStart">16dp</item>
+        <item name="android:paddingEnd">16dp</item>
+        <item name="boxBackgroundColor">?attr/colorSurfaceContainerHigh</item>
+        <item name="boxCornerRadiusBottomEnd">10dp</item>
+        <item name="boxCornerRadiusBottomStart">10dp</item>
+        <item name="boxCornerRadiusTopEnd">10dp</item>
+        <item name="boxCornerRadiusTopStart">10dp</item>
+        <item name="boxStrokeWidth">0dp</item>
+        <item name="boxStrokeWidthFocused">0dp</item>
+        <item name="hintTextColor">#848484</item>
+        <item name="android:textColorHint">#848484</item>
+        <item name="materialThemeOverlay">@style/ThemeOverlay.ConvoFlow.TextInputEditText.FilledBox</item>
+    </style>
+
+    <style name="ThemeOverlay.ConvoFlow.TextInputEditText.FilledBox" parent="ThemeOverlay.MaterialComponents.TextInputEditText.FilledBox">
+        <item name="colorControlActivated">#2C58C3</item>
+    </style>
 </resources>

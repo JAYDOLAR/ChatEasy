@@ -78,7 +78,7 @@ class Material3SearchToolbar @JvmOverloads constructor(
                 override fun onAnimationEnd(animation: Animator) {
                     visibility = VISIBLE
                     // Request focus and show keyboard when search toolbar is shown
-                    CustomViewUtility.focusAndShowKeyboard(input)
+//                    CustomViewUtility.focusAndShowKeyboard(input)
                 }
             })
             animator.start()
@@ -92,7 +92,7 @@ class Material3SearchToolbar @JvmOverloads constructor(
                 listener!!.onSearchClosed()
             }
             // Hide keyboard when search toolbar is collapsed
-            CustomViewUtility.hideKeyboard(context, input)
+//            CustomViewUtility.hideKeyboard(context, input)
             val cx = circularRevealPoint.x.toInt()
             val cy = circularRevealPoint.y.toInt()
             val initialRadius =

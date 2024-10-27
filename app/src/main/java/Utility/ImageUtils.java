@@ -63,7 +63,7 @@ public class ImageUtils {
     }
 
     public interface ImageLoadListener {
-        void onResourceReady(Drawable resource);
+        Drawable onResourceReady(Drawable resource);
 
         void onLoadFailed();
     }

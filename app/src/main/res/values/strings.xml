@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">ChatEasy</string>
+    <string name="app_name">ConvoFlow</string>
     <string name="addNewUser">Add New Friends</string>
     <string name="search_f">Search Friends</string>
     <string name="todo">TODO</string>
@@ -89,5 +89,22 @@
 
     <string name="last_message_you">You : %s</string>
     <string name="last_message_default">%s</string>
+    <string name="feedback">FeedBack</string>
+    <string name="your_feedback">Tell us your feedback</string>
+    <string name="email_optional">Email (Optional)</string>
+    <string name="submit_anonymously">Submit Anonymously</string>
+    <string name="cancel">Cancel</string>
+    <string name="submit">Submit</string>
+
+    <!-- EditProfileNameFragment -->
+    <string name="EditProfileNameFragment_your_name">Your name</string>
+    <string name="EditProfileNameFragment_first_name">First name</string>
+    <string name="EditProfileNameFragment_last_name_optional">Last name (optional)</string>
+    <string name="EditProfileNameFragment_save">Save</string>
+    <string name="EditProfileNameFragment_failed_to_save_due_to_network_issues_try_again_later">Failed to save due to network issues. Try again later.</string>
+    <string name="edit_details">Edit Details</string>
+    <string name="date_of_birth_optional">Date Of Birth (optional)</string>
+    <string name="email_id_optional">Email ID (optional)</string>
+    <string name="date_of_birth">Date Of Birth</string>
 
 </resources>
