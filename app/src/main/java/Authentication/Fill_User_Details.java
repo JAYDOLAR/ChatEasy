@@ -46,9 +46,9 @@ import CustomViews.CustomCropViewHandler;
 import Models.User;
 import Models.UserStatus;
 import Utility.CustomViewUtility;
+import Utility.FCMTokenManager;
 import Utility.FireStoreDatabaseUtils;
 import Utility.FirebaseAuthUtils;
-import Utility.FirebaseMessagingUtils;
 import Utility.LoggerUtil;
 import Utility.NotificationUtils;
 import Utility.UserStatusManager;
@@ -277,23 +277,38 @@ public class Fill_User_Details extends Fragment {
         }
 
         // Retrieve FCM token asynchronously and proceed with user creation
-        final String[] FCMToken = {""};
         Date finalUserDob = userDob;
-        FirebaseMessagingUtils.getUserTokenAndSaveToFirestore(new FirebaseMessagingUtils.TokenCallback() {
+
+        FCMTokenManager fcmTokenManager = new FCMTokenManager(requireContext());
+        fcmTokenManager.getToken(new FCMTokenManager.TokenCallback() {
             @Override
             public void onTokenReceived(String token) {
                 Log.d("FCM Token Received", token);
+                saveUserDetails(fullName, userPhoneNumber, userEmail, userAbout, finalUserDob, token);
+            }
+
+            @Override
+            public void onTokenError(String error) {
+                Log.e("FCM Token Error", Objects.requireNonNull(error));
+                saveUserDetails(fullName, userPhoneNumber, userEmail, userAbout, finalUserDob, null);
+            }
+        });
+
+        /*FirebaseMessagingUtils.getUserTokenAndSaveToFirestore(new FirebaseMessagingUtils.TokenCallback() {
+            @Override
+            public void onTokenReceived(String token) {
+
                 FCMToken[0] = token;
                 saveUserDetails(fullName, userPhoneNumber, userEmail, userAbout, finalUserDob, FCMToken[0]);
             }
 
             @Override
             public void onTokenError(Exception exception) {
-                Log.e("FCM Token Error", Objects.requireNonNull(exception.getMessage()));
+
                 FCMToken[0] = ""; // Set empty token if an error occurs
                 saveUserDetails(fullName, userPhoneNumber, userEmail, userAbout, finalUserDob, FCMToken[0]);
             }
-        });
+        });*/
     }
 
     private void saveUserDetails(String fullName, String phoneNumber, String email, String about, Date dob, String token) {

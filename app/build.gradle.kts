@@ -34,6 +34,17 @@ android {
     kotlinOptions {
         jvmTarget = "1.8"
     }
+    packaging {
+        resources {
+            excludes += listOf(
+                "META-INF/DEPENDENCIES",
+                "META-INF/LICENSE",
+                "META-INF/LICENSE.txt",
+                "META-INF/NOTICE",
+                "META-INF/NOTICE.txt"
+            )
+        }
+    }
 }
 
 dependencies {
@@ -43,7 +54,7 @@ dependencies {
     implementation("androidx.core:core-splashscreen:1.0.1")
     implementation("androidx.recyclerview:recyclerview:1.3.2")
     implementation("androidx.recyclerview:recyclerview-selection:1.1.0")
-    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
+    implementation("androidx.constraintlayout:constraintlayout:2.2.0")
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.2.0-alpha01")
     implementation("com.github.bumptech.glide:glide:4.16.0")
     implementation("com.google.firebase:firebase-firestore:25.1.1")
@@ -60,5 +71,6 @@ dependencies {
     implementation("com.google.firebase:firebase-storage")
     implementation("com.android.volley:volley:1.2.1")
 
-    implementation ("com.google.android.gms:play-services-basement:18.4.0")
+    implementation("com.google.android.gms:play-services-basement:18.4.0")
+    implementation("com.google.auth:google-auth-library-oauth2-http:1.19.0")
 }

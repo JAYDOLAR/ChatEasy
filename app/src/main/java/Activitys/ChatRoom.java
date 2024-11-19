@@ -1,6 +1,5 @@
 package Activitys;
 
-import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.drawable.Drawable;
@@ -21,10 +20,6 @@ import androidx.core.content.res.ResourcesCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.android.volley.Request;
-import com.android.volley.RequestQueue;
-import com.android.volley.toolbox.StringRequest;
-import com.android.volley.toolbox.Volley;
 import com.example.chateasy.R;
 import com.firebase.ui.firestore.FirestoreRecyclerOptions;
 import com.google.android.material.button.MaterialButton;
@@ -32,18 +27,12 @@ import com.google.android.material.textview.MaterialTextView;
 import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.storage.StorageReference;
 
 import org.jetbrains.annotations.Contract;
-import org.json.JSONException;
-import org.json.JSONObject;
 
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -53,6 +42,7 @@ import Models.MessageModel;
 import Models.MessageStatus;
 import Models.MessageType;
 import Models.User;
+import Utility.FCMV1Manager;
 import Utility.FireStoreDatabaseUtils;
 import Utility.FirebaseAuthUtils;
 import Utility.ImageUtils;
@@ -61,11 +51,6 @@ import Utility.ValidationUtils;
 
 public class ChatRoom extends AppCompatActivity {
 
-    // Constants
-    /*private static final String FCM_ENDPOINT = "https://fcm.googleapis.com/fcm/send";*/
-    private static final String FCM_API_V1_ENDPOINT = "https://fcm.googleapis.com/v1/projects/chateasy-209e2/messages:send";
-
-    private static final String AUTHORIZATION_KEY = "AAAAHY2iXOY:APA91bFbSONb8YBu1pnSleiMFUc2X0xYb_xRfD4yhNSSLvgdD2LyMt7oPSKlwTcJl3oTVlyCvFgO8JUdaQmu1vL1FeRM9D6HIWLZYlvNgnkjjCDq2gMzuqFitXp3aebQLmj6yY72pHYG";
     private static final String TAG = "ChatRoom";
     private EditText msgeditText;
     private MaterialButton sendMsgButton;
@@ -76,90 +61,10 @@ public class ChatRoom extends AppCompatActivity {
     private String oppositeUserId;
     private String chatRoomId;
     private RecyclerView recyclerView;
-    private ListenerRegistration userStatusListenerRegistration; // Declare userStatusListenerRegistration as a class-level variable
+    private FCMV1Manager fcmManager;
 
-    public static void sendFCMMessage(final Context context, final String receiverId, final String message, final String chatRoomId, String senderId) {
-        RequestQueue queue = Volley.newRequestQueue(context);
-        final String[] currentUserName = {""};
 
-        // Fetch current user details (example from Firestore)
-        FireStoreDatabaseUtils.getUserData(FirebaseAuthUtils.getUserId(context), (snapshot, error) -> {
-            if (error != null) {
-                Log.e(TAG, "Error getting document", error);
-                return;
-            }
-
-            if (snapshot != null && snapshot.exists()) {
-                User currentUser = snapshot.toObject(User.class);
-                if (currentUser != null) {
-                    currentUserName[0] = currentUser.getUserName();
-                }
-            } else {
-                Log.e(TAG, "No such document");
-            }
-        });
-
-        // Fetch recipient's FCM token from Firestore
-        DocumentReference docRef = FireStoreDatabaseUtils.getUserDocument(receiverId);
-        docRef.get().addOnSuccessListener(documentSnapshot -> {
-            if (documentSnapshot.exists()) {
-                final String recipientToken = documentSnapshot.getString("fcmToken");
-                if (recipientToken != null) {
-                    // Build the message payload for FCM v1
-                    JSONObject payload = new JSONObject();
-                    JSONObject messageObject = new JSONObject();
-                    JSONObject notificationObject = new JSONObject();
-                    JSONObject dataObject = new JSONObject();
-
-                    try {
-                        // Notification part (optional)
-                        notificationObject.put("title", "New Message from " + currentUserName[0]);
-                        notificationObject.put("body", message);
-
-                        // Data part (background message handling)
-                        dataObject.put("senderName", currentUserName[0]);
-                        dataObject.put("message", message);
-                        dataObject.put("chatRoomId", chatRoomId);
-                        dataObject.put("senderId", senderId);
-
-                        // Add recipient token and message parts
-                        messageObject.put("token", recipientToken);
-                        messageObject.put("notification", notificationObject);  // For foreground notifications
-                        messageObject.put("data", dataObject);  // For background data processing
-
-                        payload.put("message", messageObject);
-                    } catch (JSONException e) {
-                        Log.e(TAG, "JSON exception: " + e.getMessage());
-                        return;
-                    }
-
-                    // Send the request
-                    StringRequest stringRequest = new StringRequest(Request.Method.POST, FCM_API_V1_ENDPOINT,
-                            response -> Log.d(TAG, "FCM message sent successfully: " + response),
-                            error -> Log.e(TAG, "FCM message sending failed: " + Arrays.toString(error.getStackTrace()))) {
-                        @NonNull
-                        @Override
-                        public Map<String, String> getHeaders() {
-                            Map<String, String> headers = new HashMap<>();
-                            headers.put("Authorization", "Bearer " + AUTHORIZATION_KEY); // Or "key=" for legacy keys
-                            headers.put("Content-Type", "application/json");
-                            return headers;
-                        }
-
-                        @Override
-                        public byte[] getBody() {
-                            return payload.toString().getBytes();
-                        }
-                    };
-
-                    queue.add(stringRequest);
-                } else {
-                    Log.e(TAG, "Recipient FCM token is null");
-                }
-            } else {
-                Log.e(TAG, "Document does not exist for user: " + receiverId);
-            }
-        }).addOnFailureListener(e -> Log.e(TAG, "Error getting document: " + e.getMessage()));
+    public ChatRoom() {
     }
 
     @Override
@@ -168,7 +73,6 @@ public class ChatRoom extends AppCompatActivity {
         setContentView(R.layout.activity_chat_room);
         // Initialize views
         initializeViews();
-//        FireStoreDatabaseUtils.updateUserStatus(FirebaseAuthUtils.getUserId(getApplicationContext()), UserStatus.ONLINE);
         EdgeToEdge.enable(this);
 
         // Set navigation click listener
@@ -178,6 +82,8 @@ public class ChatRoom extends AppCompatActivity {
         conversationUser();
         // Setup input panel
         chatRoomConversationInputPanel();
+        fcmManager = new FCMV1Manager(this);
+
     }
 
     private void initializeViews() {
@@ -210,7 +116,6 @@ public class ChatRoom extends AppCompatActivity {
             public void afterTextChanged(Editable s) {
                 if (!isTyping) {
                     // Update user status to "Typing" when user starts typing
-//                    FireStoreDatabaseUtils.updateUserStatus(FirebaseAuthUtils.getUserId(getApplicationContext()), UserStatus.TYPING);
                     isTyping = true;
                 }
 
@@ -224,8 +129,6 @@ public class ChatRoom extends AppCompatActivity {
                 typingTimer.schedule(new TimerTask() {
                     @Override
                     public void run() {
-                        // Update user status to "Online" after typing delay
-//                        FireStoreDatabaseUtils.updateUserStatus(FirebaseAuthUtils.getUserId(getApplicationContext()), UserStatus.ONLINE);
                         isTyping = false;
                     }
                 }, TYPING_DELAY);
@@ -287,8 +190,52 @@ public class ChatRoom extends AppCompatActivity {
                 // Update the status of the message to DELIVERED
                 updateMessageStatus(message.getMessageId(), MessageStatus.DELIVERED);
 
+                final String[] currentUserName = {""};
+
+                // Fetch current user details (example from Firestore)
+                FireStoreDatabaseUtils.getUserData(FirebaseAuthUtils.getUserId(this), (snapshot, error) -> {
+                    if (error != null) {
+                        Log.e(TAG, "Error getting document", error);
+                        return;
+                    }
+
+                    if (snapshot != null && snapshot.exists()) {
+                        User currentUser = snapshot.toObject(User.class);
+                        if (currentUser != null) {
+                            currentUserName[0] = currentUser.getUserName();
+                        }
+                    } else {
+                        Log.e(TAG, "No such document");
+                    }
+                });
+
                 // Send FCM message to the receiver
-                sendFCMMessage(getApplicationContext(), message.getReceiverId(), message.getMessageContent(), chatRoomId, message.getSenderId());
+                DocumentReference docRef = FireStoreDatabaseUtils.getUserDocument(message.getReceiverId());
+                docRef.get().addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        final String receiverToken = documentSnapshot.getString("fcmToken");
+                        assert receiverToken != null;
+                        Log.e("FCMToken :::", receiverToken);
+                        fcmManager.sendMessageNotification(
+                                receiverToken,
+                                message.getMessageContent(),
+                                message.getSenderId(),
+                                currentUserName[0],
+                                chatRoomId,
+                                new FCMV1Manager.FCMCallback() {
+                                    @Override
+                                    public void onSuccess() {
+                                        Log.d("FCM", "Message sent via FCM V1");
+                                    }
+
+                                    @Override
+                                    public void onFailure(@NonNull String error) {
+                                        Log.e("FCM", "FCM V1 send failed: " + error);
+                                    }
+                                }
+                        );
+                    }
+                });
 
                 // Update the last message in the chat room
                 setItToLastMessage(chatRoomId, message.getMessageContent());
@@ -424,8 +371,7 @@ public class ChatRoom extends AppCompatActivity {
 
                                 @Override
                                 public void onLoadFailed() {
-                                    // Handle load failure
-                                    /*ValidationUtils.showToast(ChatRoom.this, "Error occurred to load the Image");*/
+                                    ValidationUtils.showToast(ChatRoom.this, "Error occurred to load the Image");
                                 }
                             })).addOnFailureListener(e -> showPlaceholderImage(getResources()));
                 }
@@ -435,15 +381,15 @@ public class ChatRoom extends AppCompatActivity {
         });
     }
 
-    // Call this method in your activity's onDestroy() or fragment's onDestroyView()
     @Override
     protected void onDestroy() {
-        super.onDestroy();
-        // Remove the listener when the activity or fragment is destroyed to avoid memory leaks
-        if (userStatusListenerRegistration != null) {
-            userStatusListenerRegistration.remove();
+        // Shutdown FCM Manager when activity is destroyed
+        if (fcmManager != null) {
+            fcmManager.shutdown();
         }
+        super.onDestroy();
     }
+
 
     private void showPlaceholderImage(Resources resources) {
         int placeholderDrawableId = R.drawable.user;
