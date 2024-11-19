@@ -11,19 +11,22 @@ import com.google.firebase.FirebaseApp;
 
 import org.jetbrains.annotations.Contract;
 
+import Utility.AppLifecycleTracker;
+import Utility.AppStateManager;
+import Utility.FCMV1Manager;
 import Utility.FirebaseAuthUtils;
 import Utility.UserStatusManager;
 
 // Create a custom Application class
 public class ChatApplication extends Application {
     private UserStatusManager userStatusManager;
-    private ActivityLifecycleCallbacks activityLifecycleCallbacks;
     private int activeActivities = 0;
+    private static FCMV1Manager fcmManager;
 
     @Override
     public void onCreate() {
         super.onCreate();
-
+        AppStateManager.init(this);
         // Initialize Firebase if not already done
         FirebaseApp.initializeApp(this);
 
@@ -38,15 +41,26 @@ public class ChatApplication extends Application {
         }
 
         // Register activity lifecycle callbacks
-        activityLifecycleCallbacks = new ApplicationActivityLifecycleCallbacks();
+        ActivityLifecycleCallbacks activityLifecycleCallbacks = new ApplicationActivityLifecycleCallbacks();
         registerActivityLifecycleCallbacks(activityLifecycleCallbacks);
+        AppLifecycleTracker.init(this);
+        fcmManager = new FCMV1Manager(this);
+    }
+
+    @Override
+    public void onTerminate() {
+        if (fcmManager != null) {
+            fcmManager.shutdown();
+        }
+        super.onTerminate();
     }
 
 
     private class ApplicationActivityLifecycleCallbacks implements ActivityLifecycleCallbacks {
         @Contract(pure = true)
         @Override
-        public void onActivityCreated(@NonNull Activity activity, Bundle savedInstanceState) {}
+        public void onActivityCreated(@NonNull Activity activity, Bundle savedInstanceState) {
+        }
 
         @Override
         public void onActivityStarted(@NonNull Activity activity) {
@@ -64,11 +78,13 @@ public class ChatApplication extends Application {
 
         @Contract(pure = true)
         @Override
-        public void onActivityResumed(@NonNull Activity activity) {}
+        public void onActivityResumed(@NonNull Activity activity) {
+        }
 
         @Contract(pure = true)
         @Override
-        public void onActivityPaused(@NonNull Activity activity) {}
+        public void onActivityPaused(@NonNull Activity activity) {
+        }
 
         @Override
         public void onActivityStopped(@NonNull Activity activity) {
@@ -86,11 +102,13 @@ public class ChatApplication extends Application {
 
         @Contract(pure = true)
         @Override
-        public void onActivitySaveInstanceState(@NonNull Activity activity, @NonNull Bundle outState) {}
+        public void onActivitySaveInstanceState(@NonNull Activity activity, @NonNull Bundle outState) {
+        }
 
         @Contract(pure = true)
         @Override
-        public void onActivityDestroyed(@NonNull Activity activity) {}
+        public void onActivityDestroyed(@NonNull Activity activity) {
+        }
     }
 
     @Override

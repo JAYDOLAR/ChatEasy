@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "126930279654",
-    "project_id": "chateasy-209e2",
-    "storage_bucket": "chateasy-209e2.appspot.com"
+    "project_number": "564341529136",
+    "project_id": "convoflow-2aedc",
+    "storage_bucket": "convoflow-2aedc.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:126930279654:android:a6fda1a8a042c37a852f27",
+        "mobilesdk_app_id": "1:564341529136:android:549ae8f7148230f5e22bf5",
         "android_client_info": {
           "package_name": "com.example.chateasy"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyBNmzLH0w5kzSPb76ecEeEf1QJIbDSDx8k"
+          "current_key": "AIzaSyCL_TJ6KT8YhkbutDW_373pl08kV86OVJ8"
         }
       ],
       "services": {

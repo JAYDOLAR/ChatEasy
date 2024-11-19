@@ -107,4 +107,6 @@
     <string name="email_id_optional">Email ID (optional)</string>
     <string name="date_of_birth">Date Of Birth</string>
 
+    <string name="me">Me</string>
+    <string name="reply">Reply</string>
 </resources>
